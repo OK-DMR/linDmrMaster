@@ -67,8 +67,7 @@ struct header{
 };
 
 
-void delRdacRepeater();
-void delRepeater();
+void delRepeaterByPos();
 void sendTalkgroupInfo();
 void sendRepeaterInfo();
 void sendReflectorStatus();
@@ -1024,7 +1023,7 @@ void *dmrListener(void *f){
 				syslog(LOG_NOTICE,"[%s]Removing repeater from list position %i",repeaterList[repPos].callsign,repPos);
 				bool found = false; 
 				for(i=0;i<highestRepeater;i++){
-					if (repeaterList[repPos].id == repeaterList[i].id){
+					if (repeaterList[repPos].id == repeaterList[i].id && repPos !=i){
 						syslog(LOG_NOTICE,"[%s]Repeater online in other thread, keep online in database",repeaterList[repPos].callsign);
 						found = true;
 					}
@@ -1034,9 +1033,8 @@ void *dmrListener(void *f){
 					updateRepeaterStatus(repeaterList[repPos].callsign,0);
 					found = false;
 				}
-				delRepeater(cliaddrOrg);
+				delRepeaterByPos(repPos);
 				if (repPos + 1 == highestRepeater) highestRepeater--;
-				delRdacRepeater(cliaddrOrg);
 				close(sockfd);
 				pthread_exit(NULL);
 			}

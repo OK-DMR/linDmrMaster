@@ -136,7 +136,7 @@ struct reflector{
 typedef enum {VOICE, DATA, IDLE} state;
 
 extern struct repeater repeaterList[100];
-extern struct repeater rdacList[100];
+//extern struct repeater rdacList[100];
 extern struct masterData sMaster;
 extern struct masterInfo master;
 extern struct reflector localReflectors[100];

@@ -43,14 +43,13 @@ struct reflector  localReflectors[100] = {0};
 int rdacSock=0;
 int highestRepeater = 0;
 int numReflectors = 0;
+bool deletingRep = false;
 
 sqlite3 *db;
 sqlite3 *openDatabase();
 void closeDatabase();
 int initDatabase();
 
-int setRdacRepeater();
-int findRdacRepeater();
 void openAprsSock();
 
 state dmrState[3];
@@ -94,49 +93,76 @@ bool isDiscarded(struct sockaddr_in address){
 	return false;
 }
 
-int initRepeater(struct repeater repeaterInfo){
-	//Initialize a repeater in the DMR list
+int initRepeater(struct sockaddr_in address){
 	int i;
-
-	//If found based on IP, just return it's position in the list
-	for(i=0;i<maxRepeaters;i++){
-		if (repeaterList[i].address.sin_addr.s_addr == repeaterInfo.address.sin_addr.s_addr) return i;
+	sqlite3_stmt *stmt;
+	char SQLQUERY[300];
+	char str[INET_ADDRSTRLEN];
+	
+	while(deletingRep){
+		usleep(5000);
 	}
 	
-	//If not found, find first empty position in the list
+	inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN);
 	for(i=0;i<maxRepeaters;i++){
-		if (repeaterList[i].address.sin_addr.s_addr == 0) break;
+		if (repeaterList[i].address.sin_addr.s_addr == address.sin_addr.s_addr){
+			break;
+		}
 	}
 	
-	//oops, max repeaters reached
 	if (i == maxRepeaters){
-		syslog(LOG_NOTICE,"Not possible to add repeater, maximum number reached. Max set to %i",maxRepeaters);
+		for(i=0;i<maxRepeaters;i++){
+			if (repeaterList[i].address.sin_addr.s_addr == 0) break;
+		}
+	}
+	
+	if (i == maxRepeaters){
+		syslog(LOG_NOTICE,"Not possible to add repeater, maximum number reached");
 		return 99;
 	}
-	//Set all the needed info for a repeater
-	repeaterInfo.address.sin_port=htons(dmrPort);
-	repeaterList[i].address = repeaterInfo.address;
-	repeaterList[i].id = repeaterInfo.id;
-	repeaterList[i].conference[1] = 0;
-	repeaterList[i].conference[2] = repeaterInfo.autoReflector;
-	repeaterList[i].autoReflector = repeaterInfo.autoReflector;
-	repeaterList[i].intlRefAllow = repeaterInfo.intlRefAllow;
-	repeaterList[i].pearRepeater[1] = 0;
-	repeaterList[i].pearRepeater[2] = 0;
-	repeaterList[i].pearPos[1] = 0;
-	repeaterList[i].pearPos[2] = 0;
-	sprintf(repeaterList[i].callsign,"%s",repeaterInfo.callsign);
-	sprintf(repeaterList[i].txFreq,"%s",repeaterInfo.txFreq);
-	sprintf(repeaterList[i].shift,"%s",repeaterInfo.shift);
-	sprintf(repeaterList[i].hardware,"%s",repeaterInfo.hardware);
-	sprintf(repeaterList[i].firmware,"%s",repeaterInfo.firmware);
-	sprintf(repeaterList[i].mode,"%s",repeaterInfo.mode);
-	sprintf(repeaterList[i].language,"%s",repeaterInfo.language);
-	sprintf(repeaterList[i].geoLocation,"%s",repeaterInfo.geoLocation);
-	sprintf(repeaterList[i].aprsPass,"%s",repeaterInfo.aprsPass);
-	sprintf(repeaterList[i].aprsBeacon,"%s",repeaterInfo.aprsBeacon);
-	sprintf(repeaterList[i].aprsPHG,"%s",repeaterInfo.aprsPHG);
-	syslog(LOG_NOTICE,"Repeater added to list position %i",i);
+	
+	//address.sin_port=htons(dmrPort);
+	repeaterList[i].address = address;
+	inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN);
+	//See if there is already info in the database based on IP address
+	db = openDatabase();
+	sprintf(SQLQUERY,"SELECT repeaterId,callsign,txFreq,shift,hardware,firmware,mode,language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow FROM repeaters WHERE ipAddress = '%s'",str);
+	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
+		if (sqlite3_step(stmt) == SQLITE_ROW){
+			repeaterList[i].id = sqlite3_column_int(stmt,0);
+			sprintf(repeaterList[i].callsign,"%s",sqlite3_column_text(stmt,1));
+			sprintf(repeaterList[i].txFreq,"%s",sqlite3_column_text(stmt,2));
+			sprintf(repeaterList[i].shift,"%s",sqlite3_column_text(stmt,3));
+			sprintf(repeaterList[i].hardware,"%s",sqlite3_column_text(stmt,4));
+			sprintf(repeaterList[i].firmware,"%s",sqlite3_column_text(stmt,5));
+			sprintf(repeaterList[i].mode,"%s",sqlite3_column_text(stmt,6));
+			sprintf(repeaterList[i].language,"%s",sqlite3_column_text(stmt,7));
+			sprintf(repeaterList[i].geoLocation,"%s",sqlite3_column_text(stmt,8));
+			sprintf(repeaterList[i].aprsPass,"%s",sqlite3_column_text(stmt,9));
+			sprintf(repeaterList[i].aprsBeacon,"%s",sqlite3_column_text(stmt,10));
+			sprintf(repeaterList[i].aprsPHG,"%s",sqlite3_column_text(stmt,11));
+			repeaterList[i].autoReflector = sqlite3_column_int(stmt,12);
+			repeaterList[i].intlRefAllow = (sqlite3_column_int(stmt,13) == 1 ? true:false);
+			repeaterList[i].conference[1] = 0;
+			repeaterList[i].conference[2] = repeaterList[i].autoReflector;
+			repeaterList[i].pearRepeater[1] = 0;
+			repeaterList[i].pearRepeater[2] = 0;
+			repeaterList[i].pearPos[1] = 0;
+			repeaterList[i].pearPos[2] = 0;
+			syslog(LOG_NOTICE,"Assigning %s %s %s %s %s %s %s autoref %i to repeater on pos %i from database [%s]",repeaterList[i].callsign,repeaterList[i].hardware
+			,repeaterList[i].firmware,repeaterList[i].mode,repeaterList[i].txFreq,repeaterList[i].shift,repeaterList[i].language,
+			repeaterList[i].autoReflector,i,str);
+			sqlite3_finalize(stmt);
+			closeDatabase(db);
+			//Highest filled position in the list
+			if (i +1 > highestRepeater) highestRepeater = i + 1;
+			return i;
+		}
+	}
+	inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN);
+	syslog(LOG_NOTICE,"Repeater not found in database based on IP %s, assigning pos %i",str,i);
+	sqlite3_finalize(stmt);
+	closeDatabase(db);
 	//Highest filled position in the list
 	if (i +1 > highestRepeater) highestRepeater = i + 1;
 	return i;
@@ -153,9 +179,42 @@ int findRepeater(struct sockaddr_in address){
 	return 99;
 }
 
+void delRepeaterByPos(int i){
+
+	deletingRep = true;
+	repeaterList[i].address.sin_addr.s_addr = 0;
+	repeaterList[i].rdacOnline = false;
+	repeaterList[i].rdacUpdated = false;
+	repeaterList[i].dmrOnline = false;
+	repeaterList[i].intlRefAllow = false;
+	repeaterList[i].rdacUpdateAttempts = 0;
+	repeaterList[i].id = 0;
+	repeaterList[i].upDated = 0;
+	repeaterList[i].conference[1] = 0;
+	repeaterList[i].conference[2] = 0;
+	repeaterList[i].autoReflector = 0;
+	repeaterList[i].lastPTPPConnect = 0;
+	repeaterList[i].lastDMRConnect = 0;
+	repeaterList[i].lastRDACConnect = 0;
+	memset(repeaterList[i].callsign,0,17);
+	memset(repeaterList[i].txFreq,0,10);
+	memset(repeaterList[i].shift,0,7);
+	memset(repeaterList[i].hardware,0,11);
+	memset(repeaterList[i].firmware,0,14);
+	memset(repeaterList[i].mode,0,4);
+	memset(repeaterList[i].language,0,50);
+	memset(repeaterList[i].geoLocation,0,20);
+	memset(repeaterList[i].aprsPass,0,6);
+	memset(repeaterList[i].aprsBeacon,0,100);
+	memset(repeaterList[i].aprsPHG,0,7);
+	syslog(LOG_NOTICE,"Repeater deleted from list pos %i",i);
+	deletingRep = false;
+}
+
 void delRepeater(struct sockaddr_in address){
         int i;
 
+		deletingRep = true;
         for(i=0;i<maxRepeaters;i++){
                 if (repeaterList[i].address.sin_addr.s_addr == address.sin_addr.s_addr){
                         repeaterList[i].address.sin_addr.s_addr = 0;
@@ -184,9 +243,11 @@ void delRepeater(struct sockaddr_in address){
                         memset(repeaterList[i].aprsBeacon,0,100);
                         memset(repeaterList[i].aprsPHG,0,7);
                         syslog(LOG_NOTICE,"Repeater deleted from list pos %i",i);
-                        return;
+                        deletingRep = false;
+						return;
                 }
         }
+		deletingRep = false;
 
 }
 
@@ -234,12 +295,11 @@ void serviceListener(port){
 				inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
 				time(&timeNow);
 				switch (buffer[20]){
-					int rdacPos;
 					case 0x10:{  //PTPP request received
 					if(isDiscarded(cliaddr)) continue;
-					rdacPos = setRdacRepeater(cliaddr);
-					if (rdacPos == 99) continue; //too many repeaters
-					if (difftime(timeNow,rdacList[rdacPos].lastPTPPConnect) < 10) continue;  //Ignore connect request
+					repPos = initRepeater(cliaddr);
+					if (repPos == 99) continue; //too many repeaters
+					if (difftime(timeNow,repeaterList[repPos].lastPTPPConnect) < 10) continue;  //Ignore connect request
 					syslog(LOG_NOTICE,"PTPP request from repeater [%s]",str);
 					memcpy(response,buffer,n);
 					//Assign device ID
@@ -248,36 +308,32 @@ void serviceListener(port){
 					response[n] = 0x01;
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Assigned PTPP device 1 to repeater [%s]",str);
-					time(&rdacList[rdacPos].lastPTPPConnect);
+					time(&repeaterList[repPos].lastPTPPConnect);
 					break;}
 				
 					case 0x11:{  //Request to startup DMR received
-					int rdacPos;
 					//See if the repeater is already known in the RDAC list
 					if(isDiscarded(cliaddr)) continue;
-					rdacPos = findRdacRepeater(cliaddr);
-					if (difftime(timeNow,rdacList[rdacPos].lastDMRConnect) < 10) continue;  //Ignore connect request
-					time(&rdacList[rdacPos].lastDMRConnect);
+					repPos = findRepeater(cliaddr);
+					if (difftime(timeNow,repeaterList[repPos].lastDMRConnect) < 10) continue;  //Ignore connect request
+					time(&repeaterList[repPos].lastDMRConnect);
 					syslog(LOG_NOTICE,"DMR request from repeater [%s]",str);
-					if (rdacPos == 99){  //If  not ignore the DMR request
-						syslog(LOG_NOTICE,"DMR request from repeater not in RDAC list [%s], ignoring",str);
+					if (repPos == 99){  //If  not ignore the DMR request
+						syslog(LOG_NOTICE,"DMR request from repeater not in repeater list [%s], ignoring",str);
 						continue;
 					}
 					//See if RDAC info from the repeater has already been received
-					if (!rdacList[rdacPos].id > 0){ //If not ignore DMR request
+					if (!repeaterList[repPos].id > 0){ //If not ignore DMR request
 						syslog(LOG_NOTICE,"RDAC info not received from repeater yet [%s], ignoring",str);
 						continue;
 					}
-					//Now that we have repeater info, initialize the repeater
-					repPos = initRepeater(rdacList[rdacPos]);
-					if (repPos == 99) continue;   //If 99 returned, more repeaters then allowed
 					memcpy(response,buffer,n);
 					//Assign device ID
 					response[4]++;
 					response[13]=0x01;
 					response[n] = 0x01;
-					//cliaddr.sin_port=htons(port);
-					cliaddr.sin_port=rdacList[rdacPos].address.sin_port;
+					cliaddr.sin_port=htons(port);
+					//cliaddr.sin_port=repeaterList[repPos].address.sin_port;
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Assigned DMR device 1 to repeater [%s - %s]",str,repeaterList[repPos].callsign);
 					//Assign port number
@@ -290,8 +346,8 @@ void serviceListener(port){
 					rport[3] = redirectPort >> 8;
 					memcpy(response + n,rport,4);
 					if (repeaterList[repPos].dmrOnline){  //If repeater is not offline, but we still get a request, just point it back to old thread
-						rdacList[repPos].rdacUpdateAttempts = 0;
-						rdacList[repPos].rdacUpdated = false;
+						repeaterList[repPos].rdacUpdateAttempts = 0;
+						repeaterList[repPos].rdacUpdated = false;
 						syslog(LOG_NOTICE,"DMR request from repeater [%s - %s] already assigned a DMR port, not starting thread",str,repeaterList[repPos].callsign);
 					}
 					else{  //Start a new DMR thread for this repeater
@@ -305,39 +361,33 @@ void serviceListener(port){
 					break;}
 
 					case 0x12:{  ////Request to startup RDAC received
-					int rdacPos;
 					//Initialize this repeater for RDAC
 					if(isDiscarded(cliaddr)) continue;
-					//rdacPos = setRdacRepeater(cliaddr);
-					rdacPos = findRdacRepeater(cliaddr);
-					cliaddr.sin_port=rdacList[rdacPos].address.sin_port;
-					if (difftime(timeNow,rdacList[rdacPos].lastRDACConnect) < 10) continue;  //Ignore connect request
+					repPos = findRepeater(cliaddr);
+					//cliaddr.sin_port=repeaterList[repPos].address.sin_port;
+					if (difftime(timeNow,repeaterList[repPos].lastRDACConnect) < 10) continue;  //Ignore connect request
 					syslog(LOG_NOTICE,"RDAC request from repeater [%s]",str);
-					//if (rdacPos == 99) continue;   //If 99 returned, more repeaters then allowed
-					if (rdacPos == 99){
-						rdacPos = setRdacRepeater(cliaddr);
-						cliaddr.sin_port=htons(port);
-					}
+					if (repPos == 99) continue;   //If 99 returned, more repeaters then allowed
 					memcpy(response,buffer,n);
 					//Assign device ID
 					response[4]++;
 					response[13]=0x01;
 					response[n] = 0x01;
-					//cliaddr.sin_port=htons(port);
+					cliaddr.sin_port=htons(port);
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Assigned RDAC device 1 to repeater [%s]",str);
 					//Assign port number
 					response[4] = 0x0b;
 					unsigned char rep[] = {0xff,0xff,0x01,0x00};
 					memcpy(response + 12,rep,4);
-					unsigned char port[] = {0xff,0x01,0x00,0x00};
-					redirectPort = baseRdacPort + (rdacPos * 2);
-					port[2] = redirectPort;
-					port[3] = redirectPort >> 8;
-					memcpy(response + n,port,4);
-					if (rdacList[rdacPos].rdacOnline){  //If repeater is not offline, but we still get a request, just point it back to old thread
-						syslog(LOG_NOTICE,"RDAC request from repeater [%s - %s] already assigned a RDAC port, not starting thread",str,rdacList[rdacPos].callsign);
-						rdacList[rdacPos].rdacUpdateAttempts = 0;
+					unsigned char rport[] = {0xff,0x01,0x00,0x00};
+					redirectPort = baseRdacPort + (repPos * 2);
+					rport[2] = redirectPort;
+					rport[3] = redirectPort >> 8;
+					memcpy(response + n,rport,4);
+					if (repeaterList[repPos].rdacOnline){  //If repeater is not offline, but we still get a request, just point it back to old thread
+						syslog(LOG_NOTICE,"RDAC request from repeater [%s - %s] already assigned a RDAC port, not starting thread",str,repeaterList[repPos].callsign);
+						repeaterList[repPos].rdacUpdateAttempts = 0;
 					}
 					else{  //Start a new RDAC thread for this repeater
 						struct sockInfo *param = malloc(sizeof(struct sockInfo));
@@ -347,7 +397,7 @@ void serviceListener(port){
 					}
 					sendto(sockfd,response,n+4,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Re-directed repeater [%s] to RDAC port %i",str,redirectPort);
-					time(&rdacList[rdacPos].lastRDACConnect);
+					time(&repeaterList[repPos].lastRDACConnect);
 					break;}
 
 				}
