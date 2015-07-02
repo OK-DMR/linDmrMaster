@@ -691,10 +691,10 @@ void *dmrListener(void *f){
 										}
 										break;
 									}
-									else{
-										syslog(LOG_NOTICE,"[%s]Conference %i not found",repeaterList[repPos].callsign,dstId[2]);
-										reflectorNewState = 5;
-									}
+								}
+								if (l == numReflectors){
+									syslog(LOG_NOTICE,"[%s]Conference %i not found",repeaterList[repPos].callsign,dstId[2]);
+									reflectorNewState = 5;
 								}
 							}
 							if (slot == 2){

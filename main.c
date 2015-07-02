@@ -121,8 +121,8 @@ int initRepeater(struct sockaddr_in address){
 		return 99;
 	}
 	
-	//address.sin_port=htons(dmrPort);
 	repeaterList[i].address = address;
+	repeaterList[i].origServPort = ntohs(address.sin_port);
 	inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN);
 	//See if there is already info in the database based on IP address
 	db = openDatabase();
@@ -218,6 +218,7 @@ void delRepeater(struct sockaddr_in address){
         for(i=0;i<maxRepeaters;i++){
                 if (repeaterList[i].address.sin_addr.s_addr == address.sin_addr.s_addr){
                         repeaterList[i].address.sin_addr.s_addr = 0;
+						repeaterList[i].origServPort = 0;
                         repeaterList[i].rdacOnline = false;
                         repeaterList[i].rdacUpdated = false;
                         repeaterList[i].dmrOnline = false;
@@ -262,7 +263,7 @@ void serviceListener(port){
 	unsigned char command[] = {0x50,0x32,0x50};
 	unsigned char ping[] = {0x0a,0x00,0x00,0x00,0x14};
 	char str[INET_ADDRSTRLEN];
-	int redirectPort;
+	int redirectPort,recPort;
 	int repPos;
 	struct repeater repeaterInfo;
 	sqlite3_stmt *stmt;
@@ -293,6 +294,7 @@ void serviceListener(port){
 			n = recvfrom(sockfd,buffer,500,0,(struct sockaddr *)&cliaddr,&len);
 			if (memcmp(buffer,command,sizeof(command)) == 0){  //See if what is received is a command or heartbeat
 				inet_ntop(AF_INET, &(cliaddr.sin_addr), str, INET_ADDRSTRLEN);
+				recPort = ntohs(cliaddr.sin_port);
 				time(&timeNow);
 				switch (buffer[20]){
 					case 0x10:{  //PTPP request received
@@ -300,14 +302,14 @@ void serviceListener(port){
 					repPos = initRepeater(cliaddr);
 					if (repPos == 99) continue; //too many repeaters
 					if (difftime(timeNow,repeaterList[repPos].lastPTPPConnect) < 10) continue;  //Ignore connect request
-					syslog(LOG_NOTICE,"PTPP request from repeater [%s]",str);
+					syslog(LOG_NOTICE,"PTPP request from repeater [%s-%i]",str,recPort);
 					memcpy(response,buffer,n);
 					//Assign device ID
 					response[4]++;
 					response[13]=0x01;
 					response[n] = 0x01;
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
-					syslog(LOG_NOTICE,"Assigned PTPP device 1 to repeater [%s]",str);
+					syslog(LOG_NOTICE,"Assigned PTPP device 1 to repeater [%s-%i]",str,recPort);
 					time(&repeaterList[repPos].lastPTPPConnect);
 					break;}
 				
@@ -317,14 +319,14 @@ void serviceListener(port){
 					repPos = findRepeater(cliaddr);
 					if (difftime(timeNow,repeaterList[repPos].lastDMRConnect) < 10) continue;  //Ignore connect request
 					time(&repeaterList[repPos].lastDMRConnect);
-					syslog(LOG_NOTICE,"DMR request from repeater [%s]",str);
+					syslog(LOG_NOTICE,"DMR request from repeater [%s-%i]",str,recPort);
 					if (repPos == 99){  //If  not ignore the DMR request
-						syslog(LOG_NOTICE,"DMR request from repeater not in repeater list [%s], ignoring",str);
+						syslog(LOG_NOTICE,"DMR request from repeater not in repeater list [%s-%i], ignoring",str,recPort);
 						continue;
 					}
 					//See if RDAC info from the repeater has already been received
 					if (!repeaterList[repPos].id > 0){ //If not ignore DMR request
-						syslog(LOG_NOTICE,"RDAC info not received from repeater yet [%s], ignoring",str);
+						syslog(LOG_NOTICE,"RDAC info not received from repeater yet [%s-%i], ignoring",str,recPort);
 						continue;
 					}
 					memcpy(response,buffer,n);
@@ -332,7 +334,7 @@ void serviceListener(port){
 					response[4]++;
 					response[13]=0x01;
 					response[n] = 0x01;
-					cliaddr.sin_port=htons(port);
+					cliaddr.sin_port=htons(repeaterList[repPos].origServPort);
 					//cliaddr.sin_port=repeaterList[repPos].address.sin_port;
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Assigned DMR device 1 to repeater [%s - %s]",str,repeaterList[repPos].callsign);
@@ -366,14 +368,14 @@ void serviceListener(port){
 					repPos = findRepeater(cliaddr);
 					//cliaddr.sin_port=repeaterList[repPos].address.sin_port;
 					if (difftime(timeNow,repeaterList[repPos].lastRDACConnect) < 10) continue;  //Ignore connect request
-					syslog(LOG_NOTICE,"RDAC request from repeater [%s]",str);
+					syslog(LOG_NOTICE,"RDAC request from repeater [%s-%i]",str,recPort);
 					if (repPos == 99) continue;   //If 99 returned, more repeaters then allowed
 					memcpy(response,buffer,n);
 					//Assign device ID
 					response[4]++;
 					response[13]=0x01;
 					response[n] = 0x01;
-					cliaddr.sin_port=htons(port);
+					cliaddr.sin_port=htons(repeaterList[repPos].origServPort);
 					sendto(sockfd,response,n+1,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 					syslog(LOG_NOTICE,"Assigned RDAC device 1 to repeater [%s]",str);
 					//Assign port number

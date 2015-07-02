@@ -41,6 +41,7 @@
 
 struct repeater{
 	struct sockaddr_in address;
+	int origServPort;
 	int sockfd;
 	bool dmrOnline;
 	bool rdacOnline;
