@@ -116,6 +116,8 @@ void playTestVoice(){
 
 }
 
+
+
 void *scheduler(){
 	time_t timeNow,beaconTime=0,dataBaseCleanTime,dmrCleanUpTime;
 	int i, id, l;
@@ -136,6 +138,9 @@ void *scheduler(){
 		if (sMaster.online){
 			sendReflectorStatus(sMaster.sockfd,sMaster.address,100);
 		}
+		
+		//Import users
+		
 
 		//Send APRS beacons
 		if (difftime(timeNow,beaconTime) > 1800){
@@ -169,7 +174,7 @@ void *scheduler(){
 			}
 				
 			id = 0;
-			sprintf(SQLQUERY,"SELECT repeaterId,callsign,txFreq,shift,hardware,firmware,mode,language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow FROM repeaters WHERE upDated = 1");
+			sprintf(SQLQUERY,"SELECT repeaterId,callsign,txFreq,shift,hardware,firmware,mode,language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow,reflectorTimeout,autoConnectTimer FROM repeaters WHERE upDated = 1");
 			if (sqlite3_prepare_v2(dbase,SQLQUERY,-1,&stmt,0) == 0){
 				while (sqlite3_step(stmt) == SQLITE_ROW){
 					id = sqlite3_column_int(stmt,0);
@@ -188,9 +193,12 @@ void *scheduler(){
 							sprintf(repeaterList[i].aprsPHG,"%s",sqlite3_column_text(stmt,11));
 							repeaterList[i].autoReflector = sqlite3_column_int(stmt,12);
 							repeaterList[i].intlRefAllow = (sqlite3_column_int(stmt,13) == 1 ? true:false);
-							syslog(LOG_NOTICE,"Repeater data changed from web %s %s %s %s %s %s %s %s %s %s %s %i on pos %i",repeaterList[i].callsign,repeaterList[i].hardware
+							repeaterList[i].reflectorTimeout = sqlite3_column_int(stmt,14);
+							repeaterList[i].autoConnectTimer = sqlite3_column_int(stmt,15);
+							syslog(LOG_NOTICE,"Repeater data changed from web %s %s %s %s %s %s %s %s %s %s %s %i %i %i on pos %i",repeaterList[i].callsign,repeaterList[i].hardware
 							,repeaterList[i].firmware,repeaterList[i].mode,repeaterList[i].txFreq,repeaterList[i].shift,repeaterList[i].language
-							,repeaterList[i].geoLocation,repeaterList[i].aprsPass,repeaterList[i].aprsBeacon,repeaterList[i].aprsPHG,repeaterList[i].autoReflector,i);
+							,repeaterList[i].geoLocation,repeaterList[i].aprsPass,repeaterList[i].aprsBeacon,repeaterList[i].aprsPHG,repeaterList[i].autoReflector
+							,repeaterList[i].reflectorTimeout,repeaterList[i].autoConnectTimer,i);
 							repeaterList[i].conference[2] = repeaterList[i].autoReflector;
 							if (repeaterList[i].pearRepeater[2] != 0){
 								repeaterList[i].pearRepeater[2] = 0;

@@ -126,7 +126,7 @@ int initRepeater(struct sockaddr_in address){
 	inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN);
 	//See if there is already info in the database based on IP address
 	db = openDatabase();
-	sprintf(SQLQUERY,"SELECT repeaterId,callsign,txFreq,shift,hardware,firmware,mode,language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow FROM repeaters WHERE ipAddress = '%s'",str);
+	sprintf(SQLQUERY,"SELECT repeaterId,callsign,txFreq,shift,hardware,firmware,mode,language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow,reflectorTimeout,autoConnectTimer FROM repeaters WHERE ipAddress = '%s'",str);
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
 		if (sqlite3_step(stmt) == SQLITE_ROW){
 			repeaterList[i].id = sqlite3_column_int(stmt,0);
@@ -143,6 +143,8 @@ int initRepeater(struct sockaddr_in address){
 			sprintf(repeaterList[i].aprsPHG,"%s",sqlite3_column_text(stmt,11));
 			repeaterList[i].autoReflector = sqlite3_column_int(stmt,12);
 			repeaterList[i].intlRefAllow = (sqlite3_column_int(stmt,13) == 1 ? true:false);
+			repeaterList[i].reflectorTimeout = sqlite3_column_int(stmt,14);
+			repeaterList[i].autoConnectTimer = sqlite3_column_int(stmt,15);
 			repeaterList[i].conference[1] = 0;
 			repeaterList[i].conference[2] = repeaterList[i].autoReflector;
 			repeaterList[i].pearRepeater[1] = 0;
@@ -193,6 +195,8 @@ void delRepeaterByPos(int i){
 	repeaterList[i].conference[1] = 0;
 	repeaterList[i].conference[2] = 0;
 	repeaterList[i].autoReflector = 0;
+	repeaterList[i].autoConnectTimer = 0;
+	repeaterList[i].reflectorTimeout = 0;
 	repeaterList[i].lastPTPPConnect = 0;
 	repeaterList[i].lastDMRConnect = 0;
 	repeaterList[i].lastRDACConnect = 0;
@@ -229,6 +233,8 @@ void delRepeater(struct sockaddr_in address){
 						repeaterList[i].conference[1] = 0;
 						repeaterList[i].conference[2] = 0;
 						repeaterList[i].autoReflector = 0;
+						repeaterList[i].autoConnectTimer = 0;
+						repeaterList[i].reflectorTimeout = 0;
                         repeaterList[i].lastPTPPConnect = 0;
                         repeaterList[i].lastDMRConnect = 0;
                         repeaterList[i].lastRDACConnect = 0;

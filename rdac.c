@@ -225,7 +225,7 @@ bool getRepeaterInfo(int sockfd,int repPos,struct sockaddr_in cliaddrOrg,sqlite3
 			repeaterList[repPos].callsign,repeaterList[repPos].txFreq,repeaterList[repPos].shift,repeaterList[repPos].hardware,repeaterList[repPos].
 			firmware,repeaterList[repPos].mode,(long)cliaddrOrg.sin_addr.s_addr,timeStamp,str,repeaterList[repPos].id);
 			sqlite3_exec(dbase,SQLQUERY,0,0,0);
-			sprintf(SQLQUERY,"SELECT language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow FROM repeaters WHERE repeaterId = %i",repeaterList[repPos].id);
+			sprintf(SQLQUERY,"SELECT language,geoLocation,aprsPass,aprsBeacon,aprsPHG,autoReflector,intlRefAllow,reflectorTimeout,autoConnectTimer FROM repeaters WHERE repeaterId = %i",repeaterList[repPos].id);
 			if (sqlite3_prepare_v2(dbase,SQLQUERY,-1,&stmt,0) == 0){
                 if (sqlite3_step(stmt) == SQLITE_ROW){
 					sprintf(repeaterList[repPos].language,"%s",sqlite3_column_text(stmt,0));
@@ -235,6 +235,8 @@ bool getRepeaterInfo(int sockfd,int repPos,struct sockaddr_in cliaddrOrg,sqlite3
 					sprintf(repeaterList[repPos].aprsPHG,"%s",sqlite3_column_text(stmt,4));
 					repeaterList[repPos].autoReflector = sqlite3_column_int(stmt,5);
 					repeaterList[repPos].intlRefAllow = (sqlite3_column_int(stmt,6) == 1 ? true:false);
+					repeaterList[repPos].reflectorTimeout = sqlite3_column_int(stmt,7);
+					repeaterList[repPos].autoConnectTimer = sqlite3_column_int(stmt,8);
 					sqlite3_finalize(stmt);
 					syslog(LOG_NOTICE,"Setting repeater language to %s [%s]",repeaterList[repPos].language,str);
 				}

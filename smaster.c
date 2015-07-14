@@ -101,6 +101,7 @@ void sendRepeaterInfo(int sockfd,struct sockaddr_in servaddr,int repPos){
 	unsigned char repInfo[200];
 
 	if (repPos == 100){
+		syslog(LOG_NOTICE,"Sending repeater info to sMaster, highest repeater %i",highestRepeater);
 		for (i=0;i<highestRepeater;i++){
 			if (repeaterList[i].address.sin_addr.s_addr !=0){
 				inet_ntop(AF_INET, &(repeaterList[i].address.sin_addr), ip, INET_ADDRSTRLEN);

@@ -236,6 +236,30 @@ int initDatabase(sqlite3 *db){
                 }
         }
 		
+
+        if (!isFieldExisting(db,"repeaters","reflectorTimeout")){
+                sprintf(SQLQUERY,"alter table repeaters add reflectorTimeout integer default 1800");
+                if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                        syslog(LOG_NOTICE,"field reflectorTimeout in repeaters created");
+                }
+                else{
+                        syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                        return 0;
+                }
+        }
+
+        if (!isFieldExisting(db,"repeaters","autoConnectTimer")){
+                sprintf(SQLQUERY,"alter table repeaters add autoConnectTimer integer default 600");
+                if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                        syslog(LOG_NOTICE,"field autoConnectTimer in repeaters created");
+                }
+                else{
+                        syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                        return 0;
+                }
+        }
+
+		
         if (!isFieldExisting(db,"master","masterDmrId")){
                 sprintf(SQLQUERY,"alter table master add masterDmrId integer default %i",r);
                 if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){

@@ -239,6 +239,7 @@ void playVoiceRepeater(int sockfd, struct sockaddr_in address, char fileName[100
 	unsigned char endBuffer[VFRAMESIZE];
 	int seq = 0;
 	int x;
+	int startPos,frames;
 	
 	sleep(1);
 	syslog(LOG_NOTICE,"[%s]Playing %s",repeaterList[repPos].callsign,fileName);
@@ -265,15 +266,50 @@ void playVoiceRepeater(int sockfd, struct sockaddr_in address, char fileName[100
 		syslog(LOG_NOTICE,"File %s not found",fileName);
 	}
 	//play callsign
-	/*for (x=0;i<strlen(repeaterList(pearRepPos).callsign;i++){
-		if (isalpha(repeaterList(pearRepPos).callsign[x])){
-			int position = pearRepPos).callsign[x] - 65;
+	/*
+	if (file1 = fopen("numbers.voice","rb") && file2 = fopen("letters.voice","rb")){
+		for (x=0;i<strlen(repeaterList(pearRepPos).callsign;i++){
+			if (isalpha(repeaterList(pearRepPos).callsign[x])){
+				startPos = lettersIndex[(pearRepPos).callsign[x] - 65) * 2];
+				frames = lettersIndex[((pearRepPos).callsign[x] - 65) * 2) -1];
+				file = file2;
+			}
+			if (isdigit(repeaterList(pearRepPos).callsign[x])){
+				startPos = numbersIndex[repeaterList(pearRepPos).callsign[x] * 2];
+				frames = numbersIndex[(repeaterList(pearRepPos).callsign[x] * 2) + 1];
+				file = file1;
+			}
+			
+			fseek(file,startPos * VFRAMESIZE,SEEK_SET);
+			for(i=0;i<frames;i++){
+				if (fread(buffer,VFRAMESIZE,1,file)){
+					slotType = buffer[SLOT_TYPE_OFFSET1] << 8 | buffer[SLOT_TYPE_OFFSET2];
+					frameType = buffer[FRAME_TYPE_OFFSET1] << 8 | buffer[FRAME_TYPE_OFFSET2];
+					packetType = buffer[PTYPE_OFFSET] & 0x0F;
+					if (slotType != 0x2222 && packetType !=3){
+						if (slotType != 0xeeee && frameType != 0x1111) buffer[4] = seq;
+						sendto(sockfd,buffer,VFRAMESIZE,0,(struct sockaddr *)&address,sizeof(address));
+						if (slotType != 0xeeee && frameType != 0x1111){
+							seq++;
+							if (seq == 256) seq= 0;
+						}
+					}
+					if (slotType != 0xeeee && frameType != 0x1111) usleep(60000);
+				}
+				else{
+					syslog(LOG_NOTICE,"[%s] fread failed",repeaterList[repPos].callsign);
+				}
+			}
 		}
-		if (isdigit(repeaterList(pearRepPos).callsign[x])){
-			int position = repeaterList(pearRepPos).callsign[x]);
-		}
-	
-	}*/
+		sendto(sockfd,endBuffer,VFRAMESIZE,0,(struct sockaddr *)&address,sizeof(address));
+		fclose(file1);
+		fclose(file2);
+	}
+	else{
+		syslog(LOG_NOTICE,"[%s] Failed to open numbers.voice or letters.voice",repeaterList[repPos].callsign);
+	}
+
+	*/
 }
 
 
@@ -659,6 +695,7 @@ void *dmrListener(void *f){
 								if(repeaterList[repPos].conferenceType[2] ==1){
 									if(sMaster.online){
 										sendRepeaterInfo(sMaster.sockfd,sMaster.address,repPos);
+										sendReflectorStatus(sMaster.sockfd,sMaster.address,repPos);
 									}
 								}
 							}
@@ -1038,12 +1075,12 @@ void *dmrListener(void *f){
 				close(sockfd);
 				pthread_exit(NULL);
 			}
-			if (difftime(timeNow,repeaterList[repPos].pearTimeout) > 1800 && repeaterList[repPos].pearRepeater[2] !=0){
+			if (difftime(timeNow,repeaterList[repPos].pearTimeout) > repeaterList[repPos].reflectorTimeout && repeaterList[repPos].pearRepeater[2] !=0){
 				syslog(LOG_NOTICE,"[%s]Disconnecting from repeater %i after timeout",repeaterList[repPos].callsign,repeaterList[repPos].pearRepeater[2]);
 				repeaterList[repPos].pearRepeater[2] = 0;
 				repeaterList[repeaterList[repPos].pearPos[2]].pearRepeater[2] = 0;
 			}
-			if (difftime(timeNow,reflectorTimeout) > 1800 && repeaterList[repPos].conference[2] !=0 && repeaterList[repPos].autoReflector == 0){
+			if (difftime(timeNow,reflectorTimeout) > repeaterList[repPos].reflectorTimeout && repeaterList[repPos].conference[2] !=0 && repeaterList[repPos].autoReflector == 0){
 				syslog(LOG_NOTICE,"[%s]Remove repeater from conference %i after conference timeout",repeaterList[repPos].callsign,repeaterList[repPos].conference[2]);
 				repeaterList[repPos].conference[2] = 0;
 				reflectorStatus(sockfd,repeaterList[repPos].address,1,repeaterList[repPos].conference[2],repPos);
@@ -1055,7 +1092,7 @@ void *dmrListener(void *f){
 				}
 
 			}
-			if (difftime(timeNow,autoReconnectTimer) > 600 && autoReconnectTimer != 0){
+			if (difftime(timeNow,autoReconnectTimer) > repeaterList[repPos].autoConnectTimer && autoReconnectTimer != 0){
 				syslog(LOG_NOTICE,"[%s]Adding repeater to conference %i due to auto reconnect timer",repeaterList[repPos].callsign,repeaterList[repPos].autoReflector);
 				repeaterList[repPos].conference[2] = repeaterList[repPos].autoReflector;
 				reflectorStatus(sockfd,repeaterList[repPos].address,2,repeaterList[repPos].conference[2],repPos);

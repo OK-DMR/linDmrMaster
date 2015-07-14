@@ -38,6 +38,7 @@
 #include <math.h>
 #include <regex.h>
 #include <ctype.h>
+#include <curl/curl.h>
 
 struct repeater{
 	struct sockaddr_in address;
@@ -70,6 +71,8 @@ struct repeater{
 	unsigned char aprsBeacon[100];
 	unsigned char aprsPHG[7];
 	int autoReflector;
+	int reflectorTimeout;
+	int autoConnectTimer;
 	int upDated;
 };
 
