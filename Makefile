@@ -34,7 +34,7 @@ CmpOptions             := -g $(Preprocessors)
 LinkOptions            :=  
 IncludePath            :=  "$(IncludeSwitch)." "$(IncludeSwitch)." 
 RcIncludePath          :=
-Libs                   :=$(LibrarySwitch)pthread $(LibrarySwitch)sqlite3 $(LibrarySwitch)m $(LibrarySwitch) curl
+Libs                   :=$(LibrarySwitch)pthread $(LibrarySwitch)sqlite3 $(LibrarySwitch)m
 LibPath                := "$(LibraryPathSwitch)." 
 
 

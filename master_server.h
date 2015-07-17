@@ -38,7 +38,6 @@
 #include <math.h>
 #include <regex.h>
 #include <ctype.h>
-#include <curl/curl.h>
 
 struct repeater{
 	struct sockaddr_in address;
