@@ -986,6 +986,11 @@ void *dmrListener(void *f){
 								if(dtmfCode[slot] == 4000 && repeaterList[repPos].conference[2] != 0 && slot == 2){
 									status = disconnectReflector(repPos,status);
 								}
+								if(dtmfCode[slot] == 5000 && repeaterList[repPos].pearRepeater[2] == 0){
+									syslog(LOG_NOTICE,"[%s]Requesting info on conference %i %s type %i",repeaterList[repPos].callsign,repeaterList[repPos].conference[2],localReflectors[l].name,localReflectors[l].type);
+									status.reflectorNewState = 4;
+								}
+
 								if(dtmfCode[slot] > 4000 && dtmfCode[slot] < 5000 && slot == 2){
 									status = connectReflector(dtmfCode[slot],repPos,status);
 								}							
@@ -1193,6 +1198,11 @@ void *dmrListener(void *f){
 						if(dtmfCode[2] == 4000 && repeaterList[repPos].conference[2] != 0){
 							status = disconnectReflector(repPos,status);
 						}
+						if(dtmfCode[slot] == 5000 && repeaterList[repPos].pearRepeater[2] == 0){
+							syslog(LOG_NOTICE,"[%s]Requesting info on conference %i %s type %i",repeaterList[repPos].callsign,repeaterList[repPos].conference[2],localReflectors[l].name,localReflectors[l].type);
+							status.reflectorNewState = 4;
+						}
+
 						if(dtmfCode[2] > 4000 && dtmfCode[2] < 5000){
 							status = connectReflector(dtmfCode[slot],repPos,status);
 						}
