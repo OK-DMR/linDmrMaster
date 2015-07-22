@@ -108,6 +108,8 @@ struct masterInfo{
 	int sMasterTS2GroupCount;
 	int repTS1GroupCount;
 	int repTS2GroupCount;
+	int priorityTG[3];
+	int priorityTimeout;
 };
 
 struct ts{
@@ -139,7 +141,6 @@ struct reflector{
 typedef enum {VOICE, DATA, IDLE} state;
 
 extern struct repeater repeaterList[100];
-//extern struct repeater rdacList[100];
 extern struct masterData sMaster;
 extern struct masterInfo master;
 extern struct reflector localReflectors[100];
@@ -160,6 +161,7 @@ extern int echoId;
 extern int echoSlot;
 extern int rrsGpsId;
 extern state dmrState[3];
+extern time_t voiceIdleTimer[3];
 extern int (*sMasterTS1List)[2];
 extern int (*sMasterTS2List)[2];
 extern int (*repTS1List)[2];

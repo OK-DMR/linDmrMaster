@@ -973,6 +973,7 @@ void *dmrListener(void *f){
 							localVoice[slot] = false;
 							dtmfDetected[slot] = false;
 							repeaterList[repPos].sending[slot] = false;
+							if (master.priorityTG[slot] == dstId[slot]) time(&voiceIdleTimer[slot]);
 							syslog(LOG_NOTICE,"[%s]Voice call ended on slot %i type %i",repeaterList[repPos].callsign,slot,callType[slot]);
 							logTraffic(srcId[slot],dstId[slot],slot,"Voice",callType[slot],repeaterList[repPos].callsign);
 							if (block[slot] == true){
@@ -1165,6 +1166,7 @@ void *dmrListener(void *f){
 					logTraffic(srcId[1],dstId[1],slot,"Voice",callType[1],repeaterList[repPos].callsign);
 					localVoice[1] = false;
 					dtmfDetected[1] = false;
+					if (master.priorityTG[1] == dstId[1]) time(&voiceIdleTimer[1]);
 					if(dtmfCode[1] != 0){
 						syslog(LOG_NOTICE,"[%s]DTMF code detected in voice stream %i",repeaterList[repPos].callsign,dtmfCode[1]);
 						dtmfCode[1] = 0;
@@ -1190,6 +1192,7 @@ void *dmrListener(void *f){
 					logTraffic(srcId[2],dstId[2],slot,"Voice",callType[2],repeaterList[repPos].callsign);
 					localVoice[2] = false;
 					dtmfDetected[2] = false;
+					if (master.priorityTG[2] == dstId[2]) time(&voiceIdleTimer[2]);
 					if(dtmfCode[2] != 0){
 						syslog(LOG_NOTICE,"[%s]DTMF code detected in voice stream %i",repeaterList[repPos].callsign,dtmfCode[2]);
 						if(dtmfCode[2] == 4000 && repeaterList[repPos].pearRepeater[2] != 0){

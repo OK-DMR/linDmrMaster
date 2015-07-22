@@ -175,6 +175,7 @@ void *sMasterThread(){
 	struct allow toSend = {0};
 	bool block[3];
 	bool reflectorTraffic = false;
+	bool logSend = false;
 	
 	syslog(LOG_NOTICE,"Starting sMaster thread");
 	block[1] = false;
@@ -240,7 +241,9 @@ void *sMasterThread(){
 					}
 				}
 				else{
-					if (dmrState[slot] == IDLE || sMaster.sending[slot]){
+					time(&timeNow);
+					dstId = buffer[DST_OFFSET3] << 16 | buffer[DST_OFFSET2] << 8 | buffer[DST_OFFSET1];
+					if ((dmrState[slot] == IDLE && (difftime(timeNow,voiceIdleTimer[slot]) > master.priorityTimeout || dstId == master.priorityTG[slot])) || sMaster.sending[slot]){
 						packetType = buffer[PTYPE_OFFSET] && 0x0f;
 						sync = buffer[SYNC_OFFSET1] << 8 | buffer[SYNC_OFFSET2];
 						switch (packetType){
@@ -248,7 +251,6 @@ void *sMasterThread(){
 							case 0x01:
 							if (sync == VCALL && dmrState[slot] != VOICE && block[slot] == false){
 								srcId = buffer[SRC_OFFSET3] << 16 | buffer[SRC_OFFSET2] << 8 | buffer[SRC_OFFSET1];
-								dstId = buffer[DST_OFFSET3] << 16 | buffer[DST_OFFSET2] << 8 | buffer[DST_OFFSET1];
 								callType = buffer[TYP_OFFSET1];
 								toSend = checkTalkGroup(dstId,slot,callType);
 								if (toSend.repeater == false){
@@ -257,6 +259,7 @@ void *sMasterThread(){
 								}
 								sMaster.sending[slot] = true;
 								dmrState[slot] = VOICE;
+								logSend = false;
 								syslog(LOG_NOTICE,"[sMaster]Voice call started on slot %i src %i dst %i type %i",slot,srcId,dstId,callType);
 								if (buffer[90] !=0) {
 									memcpy(origC[slot],buffer+90,4);
@@ -295,7 +298,10 @@ void *sMasterThread(){
 						}
 					}
 					else{
-						syslog(LOG_NOTICE,"[sMaster]Incomming traffic on slot %i, but DMR not IDLE",slot);
+						if (!logSend) {
+							syslog(LOG_NOTICE,"[sMaster]Incoming traffic on slot %i, but DMR not IDLE",slot);
+							logSend = true;
+						}
 					}
 				}
 			}

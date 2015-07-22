@@ -31,6 +31,7 @@ int rrsGpsId = 500;
 char version[5] = "3.0";
 int masterDmrId = 0;
 int debug = false;
+time_t voiceIdleTimer[3];
 
 struct repeater repeaterList[100] = {0};
 struct repeater emptyRepeater = {0};
@@ -427,7 +428,7 @@ int getMasterInfo(){
 	sqlite3_stmt *stmt;
 	
 	db = openDatabase();
-	sprintf(SQLQUERY,"SELECT ownName,ownCountryCode,ownRegion,sMasterIp,sMasterPort FROM sMaster");
+	sprintf(SQLQUERY,"SELECT ownName,ownCountryCode,ownRegion,sMasterIp,sMasterPort,priorityTGTS1,priorityTGTS2, priorityTimeout FROM sMaster");
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
 		if (sqlite3_step(stmt) == SQLITE_ROW){
 			sprintf(master.ownName,"%s",sqlite3_column_text(stmt,0));
@@ -437,6 +438,9 @@ int getMasterInfo(){
 			sprintf(master.sMasterPort,"%s",sqlite3_column_text(stmt,4));
 			master.ownCCInt = atoi(sqlite3_column_text(stmt,1));
 			master.ownRegionInt = atoi(sqlite3_column_text(stmt,2));
+			master.priorityTG[1] = sqlite3_column_int(stmt,5);
+			master.priorityTG[2] = sqlite3_column_int(stmt,6);
+			master.priorityTimeout = sqlite3_column_int(stmt,7);
 		}
 		else{
 			syslog(LOG_NOTICE,"failed to read sMasterInfo, no row");
@@ -451,8 +455,8 @@ int getMasterInfo(){
 		return 0;
 	}
 	sqlite3_finalize(stmt);
-    syslog(LOG_NOTICE,"sMaster info: ownName %s, ownCountryCode %s, ownRegion %s, sMasterIp %s, sMasterPort %s",
-	master.ownName,master.ownCountryCode,master.ownRegion,master.sMasterIp,master.sMasterPort);
+    syslog(LOG_NOTICE,"sMaster info: ownName %s, ownCountryCode %s, ownRegion %s, sMasterIp %s, sMasterPort %s priorityTGTS1 %i, priorityTGTS2 %i, priorityTimeout %i",
+	master.ownName,master.ownCountryCode,master.ownRegion,master.sMasterIp,master.sMasterPort,master.priorityTG[1],master.priorityTG[2],master.priorityTimeout);
 	
 	sprintf(SQLQUERY,"SELECT servicePort, rdacPort, dmrPort, baseDmrPort, maxRepeaters, echoId,rrsGpsId,aprsUrl,aprsPort,echoSlot,baseRdacPort,masterDmrId FROM master");
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
@@ -763,6 +767,8 @@ int main(int argc, char**argv)
 
 	dmrState[1] = IDLE;
 	dmrState[2] = IDLE;
+	time(&voiceIdleTimer[1]);
+	time(&voiceIdleTimer[2]);
 	//Get info to get us going
 	if(!getMasterInfo()) return 0;
 	//Load the allowed talkgroups
