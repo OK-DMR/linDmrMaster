@@ -34,7 +34,7 @@ CmpOptions             := -g $(Preprocessors)
 LinkOptions            :=  
 IncludePath            :=  "$(IncludeSwitch)." "$(IncludeSwitch)." 
 RcIncludePath          :=
-Libs                   :=$(LibrarySwitch)pthread $(LibrarySwitch)sqlite3 $(LibrarySwitch)m
+Libs                   :=$(LibrarySwitch)pthread $(LibrarySwitch)sqlite3 $(LibrarySwitch)m $(LibrarySwitch)curl
 LibPath                := "$(LibraryPathSwitch)." 
 
 
@@ -42,7 +42,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=/usr/share/codelite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/dmr$(ObjectSuffix) $(IntermediateDirectory)/rdac$(ObjectSuffix) $(IntermediateDirectory)/smaster$(ObjectSuffix) $(IntermediateDirectory)/sqlite$(ObjectSuffix)  $(IntermediateDirectory)/convbin$(ObjectSuffix) $(IntermediateDirectory)/BPTC1969$(ObjectSuffix) $(IntermediateDirectory)/decode34Rate$(ObjectSuffix) $(IntermediateDirectory)/hyteraDecode$(ObjectSuffix) $(IntermediateDirectory)/aprs$(ObjectSuffix)  $(IntermediateDirectory)/scheduler$(ObjectSuffix)
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/dmr$(ObjectSuffix) $(IntermediateDirectory)/rdac$(ObjectSuffix) $(IntermediateDirectory)/smaster$(ObjectSuffix) $(IntermediateDirectory)/sqlite$(ObjectSuffix)  $(IntermediateDirectory)/convbin$(ObjectSuffix) $(IntermediateDirectory)/BPTC1969$(ObjectSuffix) $(IntermediateDirectory)/decode34Rate$(ObjectSuffix) $(IntermediateDirectory)/hyteraDecode$(ObjectSuffix) $(IntermediateDirectory)/aprs$(ObjectSuffix)  $(IntermediateDirectory)/scheduler$(ObjectSuffix) $(IntermediateDirectory)/users$(ObjectSuffix)
 
 ##
 ## Main Build Targets 
@@ -152,6 +152,14 @@ $(IntermediateDirectory)/scheduler$(PreprocessSuffix): scheduler.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/scheduler$(PreprocessSuffix) "scheduler.c"
 
 
+$(IntermediateDirectory)/users$(ObjectSuffix): users.c $(IntermediateDirectory)/users$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "users.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/users$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/users$(DependSuffix): users.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/users$(ObjectSuffix) -MF$(IntermediateDirectory)/users$(DependSuffix) -MM "users.c"
+
+$(IntermediateDirectory)/users$(PreprocessSuffix): users.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/users$(PreprocessSuffix) "users.c"
+	
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
 ## Clean
@@ -190,6 +198,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/scheduler$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/scheduler$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/scheduler$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/users$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/users$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/users$(PreprocessSuffix)
 
 	$(RM) $(OutputFile)
 

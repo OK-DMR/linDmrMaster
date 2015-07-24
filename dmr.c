@@ -1084,15 +1084,15 @@ void *dmrListener(void *f){
 									dtmfDetected[slot] = true;
 									break;
 									
-									/*case 0xc6ad:
-									dtmfChar[slot] = 11;
-									dtmfDetected[slot] = true;
+									case 0xc6ad:
+									dtmfCode[slot] = 5000;
+									//dtmfDetected[slot] = true;
 									break;
 									
 									case 0xe6bf:
-									dtmfChar[slot] = 12;
-									dtmfDetected[slot] = true;
-									break;*/
+									dtmfCode[slot] = 4000;
+									//dtmfDetected[slot] = true;
+									break;
 									
 								}
 								if (dtmfDetected[slot]){

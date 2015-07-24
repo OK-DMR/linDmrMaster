@@ -29,6 +29,8 @@
 void sendAprsBeacon();
 sqlite3 *openDatabase();
 void closeDatabase();
+void loadUsersToFile();
+void importUsers();
 void updateRepeaterTable();
 void sendReflectorStatus();
 int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
@@ -119,17 +121,20 @@ void playTestVoice(){
 
 
 void *scheduler(){
-	time_t timeNow,beaconTime=0,dataBaseCleanTime,dmrCleanUpTime;
+	time_t timeNow,beaconTime,dataBaseCleanTime,dmrCleanUpTime;
+	time_t importUsersTime;
 	int i, id, l;
-	char SQLQUERY[200];
+	char SQLQUERY[500];
 	sqlite3 *dbase;
 	sqlite3_stmt *stmt;
 	bool sending = false;
+	bool firstUsersImport = true;
 
 	syslog(LOG_NOTICE,"Scheduler thread started");
 	time(&beaconTime);
 	time(&dataBaseCleanTime);
 	time(&dmrCleanUpTime);
+	time(&importUsersTime);
 	for(;;){
 		sleep(10);
 		time(&timeNow);
@@ -140,7 +145,13 @@ void *scheduler(){
 		}
 		
 		//Import users
-		
+		if (difftime(timeNow,importUsersTime) > 86400 || firstUsersImport){
+			//syslog(LOG_NOTICE,"TEST IMPORT USERS %i %i",timeNow,importUsersTime);
+			time(&importUsersTime);
+			loadUsersToFile();
+			importUsers();
+			firstUsersImport = false;
+		}
 
 		//Send APRS beacons
 		if (difftime(timeNow,beaconTime) > 1800){
