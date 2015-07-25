@@ -92,7 +92,7 @@ void playTestVoice(){
 		else{
 			syslog(LOG_NOTICE,"[VoiceTest] Failed to open %s",startFile);
 		}
-		if (file = fopen("chunks.voice","rb")){
+		if (file = fopen("letters.voice","rb")){
 			syslog(LOG_NOTICE,"[VoiceTest] Playing from chunks.voice startPos = %i, frames = %i on repeater %s",startPos,frames,repeaterList[repeater].callsign);
 			fseek(file,startPos * VFRAMESIZE,SEEK_SET);
 			for(i=0;i<frames;i++){
@@ -104,7 +104,7 @@ void playTestVoice(){
 					if (slotType != 0xeeee && frameType != 0x1111) usleep(60000);
 				}
 				else{
-					syslog(LOG_NOTICE,"[VoiceTest] fread failed from chunks.voice");
+					syslog(LOG_NOTICE,"[VoiceTest] fread failed from letters.voice");
 				}
 			}
 			sendto(repeaterList[repeater].sockfd,endBuffer,VFRAMESIZE,0,(struct sockaddr *)&repeaterList[repeater].address,sizeof(repeaterList[repeater].address));

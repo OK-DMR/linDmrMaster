@@ -91,7 +91,9 @@ void decodeHyteraRrs();
 sqlite3 *openDatabase();
 void closeDatabase();
 
-int numbersIndex[20] = {25,10,50,10,72,15,95,10,120,15,139,20,170,12,190,15,218,15,240,15};
+int numbersIndex[20] = {23,11,50,10,72,15,95,10,120,15,139,20,170,12,190,15,218,15,240,15};
+int lettersIndex[52] ={18,13,30,13,45,13,60,13,75,13,79,15,95,13,110,13,125,13,137,13,145,13,155,13,170,13,185,13,195,13,205,13,
+220,13,232,13,242,13,255,13,270,13,285,13,300,13,312,13,325,13,340,13};
 
 time_t reflectorTimeout,autoReconnectTimer;
 
@@ -359,12 +361,12 @@ void playVoiceReflector(int sockfd, struct sockaddr_in address, char fileName[10
 }
 
 void playVoiceRepeater(int sockfd, struct sockaddr_in address, char fileName[100],int repPos, int pearRepPos){
-	FILE *file,file1,file2;
+	FILE *file,*file1,*file2;
 	int slotType=0,frameType=0,packetType=0;
 	unsigned char buffer[VFRAMESIZE];
 	unsigned char endBuffer[VFRAMESIZE];
 	int seq = 0;
-	int x;
+	int x,i;
 	int startPos,frames;
 	
 	sleep(1);
@@ -392,17 +394,18 @@ void playVoiceRepeater(int sockfd, struct sockaddr_in address, char fileName[100
 		syslog(LOG_NOTICE,"File %s not found",fileName);
 	}
 	//play callsign
-	/*
-	if (file1 = fopen("numbers.voice","rb") && file2 = fopen("letters.voice","rb")){
-		for (x=0;i<strlen(repeaterList(pearRepPos).callsign;i++){
-			if (isalpha(repeaterList(pearRepPos).callsign[x])){
-				startPos = lettersIndex[(pearRepPos).callsign[x] - 65) * 2];
-				frames = lettersIndex[((pearRepPos).callsign[x] - 65) * 2) -1];
+	syslog(LOG_NOTICE,"[%s]Playing repeater callsign %s",repeaterList[repPos].callsign,repeaterList[pearRepPos].callsign);
+	if (file1 = fopen("numbers.voice","rb")){
+		file2 = fopen("letters.voice","rb");
+		for (x=0;x<strlen(repeaterList[pearRepPos].callsign);x++){
+			if (isalpha(repeaterList[pearRepPos].callsign[x])){
+				startPos = lettersIndex[(repeaterList[pearRepPos].callsign[x] - 65) * 2];
+				frames = lettersIndex[((repeaterList[pearRepPos].callsign[x] - 65) * 2) +1];
 				file = file2;
 			}
-			if (isdigit(repeaterList(pearRepPos).callsign[x])){
-				startPos = numbersIndex[repeaterList(pearRepPos).callsign[x] * 2];
-				frames = numbersIndex[(repeaterList(pearRepPos).callsign[x] * 2) + 1];
+			if (isdigit(repeaterList[pearRepPos].callsign[x])){
+				startPos = numbersIndex[(repeaterList[pearRepPos].callsign[x] - 48) * 2];
+				frames = numbersIndex[((repeaterList[pearRepPos].callsign[x] - 48) * 2) +1];
 				file = file1;
 			}
 			
@@ -430,12 +433,12 @@ void playVoiceRepeater(int sockfd, struct sockaddr_in address, char fileName[100
 		sendto(sockfd,endBuffer,VFRAMESIZE,0,(struct sockaddr *)&address,sizeof(address));
 		fclose(file1);
 		fclose(file2);
-	}
+		}
 	else{
 		syslog(LOG_NOTICE,"[%s] Failed to open numbers.voice or letters.voice",repeaterList[repPos].callsign);
 	}
 
-	*/
+	
 }
 
 
