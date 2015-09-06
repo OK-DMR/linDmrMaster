@@ -28,7 +28,7 @@ int maxRepeaters = 20;
 int echoId = 9990;
 int echoSlot = 1;
 int rrsGpsId = 500;
-char version[5] = "3.0";
+char version[5] = "3.5";
 int masterDmrId = 0;
 int debug = false;
 time_t voiceIdleTimer[3];
@@ -428,7 +428,7 @@ int getMasterInfo(){
 	sqlite3_stmt *stmt;
 	
 	db = openDatabase();
-	sprintf(SQLQUERY,"SELECT ownName,ownCountryCode,ownRegion,sMasterIp,sMasterPort,priorityTGTS1,priorityTGTS2, priorityTimeout FROM sMaster");
+	sprintf(SQLQUERY,"SELECT ownName,ownCountryCode,ownRegion,sMasterIp,sMasterPort,priorityTGTS1,priorityTGTS2, priorityTimeout,eMail FROM sMaster");
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
 		if (sqlite3_step(stmt) == SQLITE_ROW){
 			sprintf(master.ownName,"%s",sqlite3_column_text(stmt,0));
@@ -441,6 +441,7 @@ int getMasterInfo(){
 			master.priorityTG[1] = sqlite3_column_int(stmt,5);
 			master.priorityTG[2] = sqlite3_column_int(stmt,6);
 			master.priorityTimeout = sqlite3_column_int(stmt,7);
+			sprintf(master.eMail,"%s",sqlite3_column_text(stmt,8));
 		}
 		else{
 			syslog(LOG_NOTICE,"failed to read sMasterInfo, no row");
@@ -733,6 +734,28 @@ void setRepeatersOffline(){
 	closeDatabase(db);
 }
 
+void loginDmrPlus(){
+	CURL *curl;
+    CURLcode res;
+	struct utsname unameData;
+    char userfilename[20] = "user.db";
+	char url[200];
+
+    curl = curl_easy_init();
+	uname(&unameData); 
+	syslog(LOG_NOTICE,"Login to ham-dmr.de\n");
+    if (curl) {
+		sprintf(url,"ham-dmr.de/dmr/dmrmaster.php?name=%s&email=%s&version=%s-%s&id=%i&mmc=%s%s",master.ownName,master.eMail,version,unameData.sysname,masterDmrId,master.ownCountryCode,master.ownRegion);
+		syslog(LOG_NOTICE,url);
+        curl_easy_setopt(curl, CURLOPT_URL, url );
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+    }
+	syslog(LOG_NOTICE,"\n");
+
+}
+
 int main(int argc, char**argv)
 {
 	
@@ -775,6 +798,7 @@ int main(int argc, char**argv)
 	if(!loadTalkGroups()) return 0;
 	getLocalReflectors();
 	setRepeatersOffline();
+	loginDmrPlus();
 	//Start sMaster Thread
 	pthread_create(&thread, NULL, sMasterThread,NULL);
 	//Start listening on the service port

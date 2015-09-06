@@ -311,10 +311,10 @@ void *rdacListener(void* f){
 					}
 					else{
 						syslog(LOG_NOTICE,"Requesting RDAC info from repeater on port %i [%s]",port,str);
+						dbase = openDatabase();
+						getRepeaterInfo(sockfd,repPos,cliaddr,dbase);
+						closeDatabase(dbase);
 					}
-					dbase = openDatabase();
-					getRepeaterInfo(sockfd,repPos,cliaddr,dbase);
-					closeDatabase(dbase);
 				}
 			}
 		}

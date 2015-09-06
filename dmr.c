@@ -1155,7 +1155,8 @@ void *dmrListener(void *f){
 				response[0] = 0x41;
 				sendto(sockfd,response,n,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
 				if(repeaterList[repPos].address.sin_port != cliaddr.sin_port){
-					syslog(LOG_NOTICE,"[%s]IP port changed !!! old port:%i new port:%i",repeaterList[repPos].callsign,ntohs(repeaterList[repPos].address.sin_port),ntohs(cliaddr.sin_port));
+					inet_ntop(AF_INET, &(cliaddr.sin_addr), ip, INET_ADDRSTRLEN);
+					syslog(LOG_NOTICE,"[%s]IP port changed !!! old port:%i new port:%i, ip:%s",repeaterList[repPos].callsign,ntohs(repeaterList[repPos].address.sin_port),ntohs(cliaddr.sin_port),ip);
 					repeaterList[repPos].address.sin_port = cliaddr.sin_port;
 				}
 				time(&pingTime);

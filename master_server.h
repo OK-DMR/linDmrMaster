@@ -39,6 +39,7 @@
 #include <regex.h>
 #include <ctype.h>
 #include <curl/curl.h>
+#include <sys/utsname.h>
 
 struct repeater{
 	struct sockaddr_in address;
@@ -99,6 +100,7 @@ struct masterInfo{
 	char ownName[20];
 	char ownCountryCode[5];
 	char ownRegion[2];
+	char eMail[100];
 	char sMasterIp[100];
 	char sMasterPort[6];
 	char announcedCC1[90];

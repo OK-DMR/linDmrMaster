@@ -103,7 +103,7 @@ void sendRepeaterInfo(int sockfd,struct sockaddr_in servaddr,int repPos){
 	if (repPos == 100){
 		syslog(LOG_NOTICE,"Sending repeater info to sMaster, highest repeater %i",highestRepeater);
 		for (i=0;i<highestRepeater;i++){
-			if (repeaterList[i].address.sin_addr.s_addr !=0){
+			if (strlen(repeaterList[i].callsign) !=0){
 				inet_ntop(AF_INET, &(repeaterList[i].address.sin_addr), ip, INET_ADDRSTRLEN);
 				if(repeaterList[i].conference[2] !=0 && repeaterList[i].conferenceType[2] == 1){
 					sprintf(conference,"%i",repeaterList[i].conference[2]);
@@ -192,7 +192,7 @@ void *sMasterThread(){
 	sMaster.address = servaddr;
 	sMaster.sockfd = sockfd;
 	sMaster.online = true;
-	sprintf(ping,"PING%s%s%s ",master.ownCountryCode,master.ownRegion,version);
+	sprintf(ping,"3ING%s%s%i ",master.ownCountryCode,master.ownRegion,masterDmrId);
 	time(&needPingTime);
 	sendto(sockfd,ping,strlen(ping),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
 	time(&reportTime);

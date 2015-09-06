@@ -316,6 +316,18 @@ int initDatabase(sqlite3 *db){
                 }
         }
 		
+        if (!isFieldExisting(db,"sMaster","eMail")){
+                sprintf(SQLQUERY,"alter table sMaster add eMail varchar(100) default 'dmrMaster@test.be'");
+                if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                        syslog(LOG_NOTICE,"field eMail in sMaster created");
+                }
+                else{
+                        syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                        return 0;
+                }
+        }
+		
+	
 	//Clean database
 	sprintf(SQLQUERY,"update repeaters set currentReflector = 0");
 	if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
