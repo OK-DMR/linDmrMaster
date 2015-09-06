@@ -740,6 +740,7 @@ void loginDmrPlus(){
 	struct utsname unameData;
     char userfilename[20] = "user.db";
 	char url[200];
+	char *buf;
 
     curl = curl_easy_init();
 	uname(&unameData); 
@@ -749,10 +750,16 @@ void loginDmrPlus(){
 		syslog(LOG_NOTICE,url);
         curl_easy_setopt(curl, CURLOPT_URL, url );
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl,CURLOPT_ERRORBUFFER,buf);
         res = curl_easy_perform(curl);
+	if (res !=CURLE_OK){
+		syslog(LOG_NOTICE,"Error login: %s",buf);
+	}
+	else{
+		syslog(LOG_NOTICE,"Login OK");
+	}
         curl_easy_cleanup(curl);
     }
-	syslog(LOG_NOTICE,"\n");
 
 }
 
