@@ -801,10 +801,10 @@ void *dmrListener(void *f){
 							repeaterList[repPos].sending[slot] = true;
 							if (sMaster.online){
 								if (repeaterList[repPos].conference[2] !=0 && repeaterList[repPos].conferenceType[2] ==1 && slot == 2 && dstId[slot] == 9){
-									sprintf(webUserInfo,"RX_Slot=%i,GROUP=%i,USER_ID=%i,TYPE=Voice,VERS=%s,RPTR=%i,%s\n",slot,repeaterList[repPos].conference[2],srcId[slot],version,repeaterList[repPos].id,master.ownName);
+									sprintf(webUserInfo,"RX_Slot=%i,GROUP=%i,USER_ID=%i,TYPE=Voice,VERS=%s,RPTR=%i,%s,%i\n",slot,repeaterList[repPos].conference[2],srcId[slot],version,repeaterList[repPos].id,master.ownName,masterDmrId);
 								}
 								else{
-									sprintf(webUserInfo,"RX_Slot=%i,GROUP=%i,USER_ID=%i,TYPE=Voice,VERS=%s,RPTR=%i,%s\n",slot,dstId[slot],srcId[slot],version,repeaterList[repPos].id,master.ownName);
+									sprintf(webUserInfo,"RX_Slot=%i,GROUP=%i,USER_ID=%i,TYPE=Voice,VERS=%s,RPTR=%i,%s,%i\n",slot,dstId[slot],srcId[slot],version,repeaterList[repPos].id,master.ownName,masterDmrId);
 								}
 								sendto(sMaster.sockfd,webUserInfo,strlen(webUserInfo),0,(struct sockaddr *)&sMaster.address,sizeof(sMaster.address));
 							}
