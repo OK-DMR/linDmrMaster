@@ -1029,7 +1029,7 @@ void *dmrListener(void *f){
 							memcpy(sMasterFrame,buffer,n);
 							memcpy(sMasterFrame + n,myId,11);
 							sMasterFrame[0] = 'R';
-							sendto(sMaster.sockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.address,sizeof(sMaster.address));
+							sendto(sMaster.voiceSockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.voiceAddress,sizeof(sMaster.voiceAddress));
 						}
 					}
 						//DTMF detection
@@ -1116,14 +1116,14 @@ void *dmrListener(void *f){
 							if (txStart){
 								memcpy(sMasterFrame,holdBuffer[1],n);
 								memcpy(sMasterFrame + n,myId,11);
-								sendto(sMaster.sockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.address,sizeof(sMaster.address));
+								sendto(sMaster.voiceSockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.voiceAddress,sizeof(sMaster.voiceAddress));
 								memcpy(sMasterFrame,holdBuffer[2],n);
 								memcpy(sMasterFrame + n,myId,11);
-								sendto(sMaster.sockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.address,sizeof(sMaster.address));
+								sendto(sMaster.voiceSockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.voiceAddress,sizeof(sMaster.voiceAddress));
 							}
 							memcpy(sMasterFrame,buffer,n);
 							memcpy(sMasterFrame + n,myId,11);
-							sendto(sMaster.sockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.address,sizeof(sMaster.address));
+							sendto(sMaster.voiceSockfd,sMasterFrame,103,0,(struct sockaddr *)&sMaster.voiceAddress,sizeof(sMaster.voiceAddress));
 						}
 						if(txStart){
 							txStart = false;

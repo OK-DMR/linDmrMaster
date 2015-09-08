@@ -86,9 +86,14 @@ bool isTableExisting(sqlite3 *db, char *table){
 
 int initDatabase(sqlite3 *db){
 	char SQLQUERY[1000];
+	int r;
+	sqlite3_stmt *stmt;
 	
 	srand(time(NULL));
-	int r = rand() % 999999;
+	
+	do{
+		r = rand() % 99999;
+	} while (r < 10000);
 	if (!isTableExisting(db,"master")){
 		sprintf(SQLQUERY,"CREATE TABLE master (repTS1 VARCHAR(100) default '',repTS2 VARCHAR(100) default '',sMasterTS1 VARCHAR(100) default '',sMasterTS2 VARCHAR(100) default '', timeBase INTEGER default 60, servicePort int default 50000, rdacPort int default 50002,dmrPort int default 50001, baseDmrPort int default 50100, baseRdacPort int default 50200, maxRepeaters int default 20, echoId int default 9990, rrsGpsId int default 500, aprsUrl VARCHAR(100) default '', aprsPort VARCHAR(7) default '8080', echoSlot integer default 1, masterDmrId integer default %i)",r);
 		if (sqlite3_exec(db,SQLQUERY,NULL,NULL,NULL) == 0){
@@ -327,7 +332,29 @@ int initDatabase(sqlite3 *db){
                 }
         }
 		
+	//Fix for random master ID max 5 digits
+	bool misMatch = false;
+	sprintf(SQLQUERY,"SELECT masterDmrId FROM master");
+	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
+		if (sqlite3_step(stmt) == SQLITE_ROW){
+			if (sqlite3_column_int(stmt,0)<10000 || sqlite3_column_int(stmt,0)>99999){
+				misMatch = true;
+			}
+			sqlite3_finalize(stmt);
+		}
+	}
 	
+	if (misMatch){
+		syslog(LOG_NOTICE,"Correcting random masterID");
+		sprintf(SQLQUERY,"update master set masterDmrId = %i",r);
+        if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+			syslog(LOG_NOTICE,"Successfully changed masterId");
+        }
+        else{
+			syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+            return 0;
+        }
+	}
 	//Clean database
 	sprintf(SQLQUERY,"update repeaters set currentReflector = 0");
 	if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){

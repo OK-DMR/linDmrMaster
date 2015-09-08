@@ -40,6 +40,7 @@
 #include <ctype.h>
 #include <curl/curl.h>
 #include <sys/utsname.h>
+#include <stdint.h>
 
 struct repeater{
 	struct sockaddr_in address;
@@ -91,7 +92,9 @@ struct idInfo{
 
 struct masterData{
 	struct sockaddr_in address;
+	struct sockaddr_in voiceAddress;
 	int sockfd;
+	int voiceSockfd;
 	bool online;
 	bool sending[3];
 };

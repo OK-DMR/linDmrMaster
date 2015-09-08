@@ -156,13 +156,13 @@ void sendReflectorStatus(int sockfd,struct sockaddr_in servaddr,int repPos){
 }
 
 void *sMasterThread(){
-	int sockfd = 0;
-	char ping[50];
+	int sockfd = 0,voiceSockfd = 0;
 	unsigned char buffer[VFRAMESIZE];
+	char ping[70];
 	int n,rc,i;
 	fd_set fdMaster;
-	struct timeval timeout;
 	time_t timeNow,needPingTime,reportTime,pongTime;
+	struct timeval timeout;
 	int packetType = 0;
 	unsigned char slot = 0;
 	int sync = 0;
@@ -171,13 +171,13 @@ void *sMasterThread(){
 	int callType = 0;
 	int defTG2 = 9;
 	unsigned char origC[5][3];
-	struct sockaddr_in servaddr,cliaddr;
+	struct sockaddr_in servaddr,voiceServaddr;
 	struct allow toSend = {0};
 	bool block[3];
 	bool reflectorTraffic = false;
 	bool logSend = false;
-	
-	syslog(LOG_NOTICE,"Starting sMaster thread");
+
+	syslog(LOG_NOTICE,"[sMaster]Starting sMaster voice thread");
 	block[1] = false;
 	block[2] = false;
 	
@@ -185,17 +185,28 @@ void *sMasterThread(){
 	bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr=INADDR_ANY;
-	servaddr.sin_port=htons(atoi(master.sMasterPort));
+	servaddr.sin_port=htons(62010);
 	bind(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr));
 	servaddr.sin_addr.s_addr=inet_addr(master.sMasterIp);
-    	
+
+	voiceSockfd=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+	bzero(&voiceServaddr,sizeof(voiceServaddr));
+	voiceServaddr.sin_family = AF_INET;
+	voiceServaddr.sin_addr.s_addr=INADDR_ANY;
+	voiceServaddr.sin_port=htons(62011);
+	bind(voiceSockfd,(struct sockaddr *)&voiceServaddr,sizeof(voiceServaddr));
+	voiceServaddr.sin_addr.s_addr=inet_addr(master.sMasterIp);
+
 	sMaster.address = servaddr;
+	sMaster.voiceAddress = voiceServaddr;
 	sMaster.sockfd = sockfd;
+	sMaster.voiceSockfd = voiceSockfd;
 	sMaster.online = true;
 	sprintf(ping,"3ING%s%s%i ",master.ownCountryCode,master.ownRegion,masterDmrId);
 	time(&needPingTime);
 	sendto(sockfd,ping,strlen(ping),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
 	time(&reportTime);
+	
 	FD_ZERO(&fdMaster);
 	
 	for(;;){
@@ -203,7 +214,7 @@ void *sMasterThread(){
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 		if (rc = select(sockfd+1, &fdMaster, NULL, NULL, &timeout) == -1) { 
-			syslog(LOG_NOTICE,"Select error in sMaster thread");
+			syslog(LOG_NOTICE,"[sMaster]Select error in sMaster thread");
 			close(sockfd);
 			//need to reconnect here !!!!
         }

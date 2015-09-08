@@ -36,6 +36,50 @@ void sendReflectorStatus();
 int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
 char startFile[100];
 
+void loginDmrPlus(){
+	CURL *curl;
+    CURLcode res;
+	struct utsname unameData;
+    char userfilename[20] = "user.db";
+	char url[300];
+	char nickName[100];
+	char *buf;
+	int x;
+	char compileBits[7] = "";
+
+	#if UINTPTR_MAX == 0xffffffff
+		sprintf(compileBits,"32Bit");
+	#elif UINTPTR_MAX == 0xffffffffffffffff
+		sprintf(compileBits,"64Bit");
+	#else
+		/* wtf */
+	#endif
+
+    curl = curl_easy_init();
+	uname(&unameData); 
+	syslog(LOG_NOTICE,"Login to ham-dmr.de\n");
+    if (curl) {
+		memset(nickName,0,sizeof(nickName));
+		for (x = 0;master.ownName[x] != 0;x++){
+			nickName[x] = toupper(master.ownName[x]);
+		}
+		sprintf(url,"ham-dmr.de/dmr/dmrmaster.php?name=%s&email=%s&version=%s-%s-%s&id=%i&mmc=%s%s",nickName,master.eMail,version,unameData.sysname,compileBits,masterDmrId,master.ownCountryCode,master.ownRegion);
+		syslog(LOG_NOTICE,url);
+        curl_easy_setopt(curl, CURLOPT_URL, url );
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl,CURLOPT_ERRORBUFFER,buf);
+        res = curl_easy_perform(curl);
+	if (res !=CURLE_OK){
+		syslog(LOG_NOTICE,"Error login: %s",buf);
+	}
+	else{
+		syslog(LOG_NOTICE,"Login OK");
+	}
+        curl_easy_cleanup(curl);
+    }
+}
+
+
 void playTestVoice(){
 	FILE *file;
 	char fileName[100] = "voiceTest";
@@ -121,7 +165,7 @@ void playTestVoice(){
 
 
 void *scheduler(){
-	time_t timeNow,beaconTime,dataBaseCleanTime,dmrCleanUpTime;
+	time_t timeNow,beaconTime,dataBaseCleanTime,dmrCleanUpTime,dmrPlusLogin;
 	time_t importUsersTime;
 	int i, id, l;
 	char SQLQUERY[500];
@@ -135,6 +179,7 @@ void *scheduler(){
 	time(&dataBaseCleanTime);
 	time(&dmrCleanUpTime);
 	time(&importUsersTime);
+	time(&dmrPlusLogin);
 	for(;;){
 		sleep(10);
 		time(&timeNow);
@@ -288,6 +333,10 @@ void *scheduler(){
 			time(&dmrCleanUpTime);
 		}
 		
+		if (difftime(timeNow,dmrCleanUpTime) > 580){
+			loginDmrPlus();
+			time(&dmrPlusLogin);
+		}
 		//playTestVoice();
 	}
 }

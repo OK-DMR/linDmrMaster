@@ -28,10 +28,11 @@ int maxRepeaters = 20;
 int echoId = 9990;
 int echoSlot = 1;
 int rrsGpsId = 500;
-char version[5] = "3.5";
+char version[5] = "3.6";
 int masterDmrId = 0;
 int debug = false;
 time_t voiceIdleTimer[3];
+
 
 struct repeater repeaterList[100] = {0};
 struct repeater emptyRepeater = {0};
@@ -52,6 +53,7 @@ void closeDatabase();
 int initDatabase();
 
 void openAprsSock();
+void loginDmrPlus();
 
 state dmrState[3];
 
@@ -67,6 +69,7 @@ void *rdacListener();
 void *sMasterThread();
 void *webServerListener();
 void *scheduler();
+
 
 void discard(struct sockaddr_in address){
 	int i;
@@ -734,38 +737,10 @@ void setRepeatersOffline(){
 	closeDatabase(db);
 }
 
-void loginDmrPlus(){
-	CURL *curl;
-    CURLcode res;
-	struct utsname unameData;
-    char userfilename[20] = "user.db";
-	char url[200];
-	char *buf;
-
-    curl = curl_easy_init();
-	uname(&unameData); 
-	syslog(LOG_NOTICE,"Login to ham-dmr.de\n");
-    if (curl) {
-		sprintf(url,"ham-dmr.de/dmr/dmrmaster.php?name=%s&email=%s&version=%s-%s&id=%i&mmc=%s%s",master.ownName,master.eMail,version,unameData.sysname,masterDmrId,master.ownCountryCode,master.ownRegion);
-		syslog(LOG_NOTICE,url);
-        curl_easy_setopt(curl, CURLOPT_URL, url );
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
-	curl_easy_setopt(curl,CURLOPT_ERRORBUFFER,buf);
-        res = curl_easy_perform(curl);
-	if (res !=CURLE_OK){
-		syslog(LOG_NOTICE,"Error login: %s",buf);
-	}
-	else{
-		syslog(LOG_NOTICE,"Login OK");
-	}
-        curl_easy_cleanup(curl);
-    }
-
-}
 
 int main(int argc, char**argv)
 {
-	
+
 	int pid;
 	pid = fork();
 	if (pid == 0){
