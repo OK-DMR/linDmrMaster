@@ -183,3 +183,4 @@ extern int aprsSockFd;
 extern int numReflectors;
 extern int masterDmrId;
 extern int debug;
+extern int versionMismatch;

@@ -36,14 +36,18 @@ void sendReflectorStatus();
 int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
 char startFile[100];
 
+struct url_data {
+    size_t size;
+    char* data;
+};
+
+
 void loginDmrPlus(){
 	CURL *curl;
     CURLcode res;
 	struct utsname unameData;
-    char userfilename[20] = "user.db";
 	char url[300];
 	char nickName[100];
-	char *buf;
 	int x;
 	char compileBits[7] = "";
 
@@ -67,10 +71,9 @@ void loginDmrPlus(){
 		syslog(LOG_NOTICE,url);
         curl_easy_setopt(curl, CURLOPT_URL, url );
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
-	curl_easy_setopt(curl,CURLOPT_ERRORBUFFER,buf);
         res = curl_easy_perform(curl);
 	if (res !=CURLE_OK){
-		syslog(LOG_NOTICE,"Error login: %s",buf);
+		syslog(LOG_NOTICE,"Error login: %s",curl_easy_strerror(res));
 	}
 	else{
 		syslog(LOG_NOTICE,"Login OK");
@@ -79,6 +82,84 @@ void loginDmrPlus(){
     }
 }
 
+size_t write_data(void *ptr, size_t size, size_t nmemb, struct url_data *data) {
+    size_t index = data->size;
+    size_t n = (size * nmemb);
+    char* tmp;
+
+    data->size += (size * nmemb);
+
+    tmp = realloc(data->data, data->size + 1); /* +1 for '\0' */
+
+    if(tmp) {
+        data->data = tmp;
+    } else {
+        if(data->data) {
+            free(data->data);
+        }
+        fprintf(stderr, "Failed to allocate memory.\n");
+        return 0;
+    }
+
+    memcpy((data->data + index), ptr, n);
+    data->data[data->size] = '\0';
+
+    return size * nmemb;
+}
+
+void versionCheck(){
+	CURL *curl;
+    CURLcode res;
+	struct utsname unameData;
+	char url[300];
+	char nickName[100];
+	int x;
+	char compileBits[7] = "";
+
+	struct url_data data;
+    data.size = 0;
+    data.data = malloc(4096); /* reasonable size initial buffer */
+    if(NULL == data.data) {
+        syslog(LOG_NOTICE, "Failed to allocate memory.");
+        return ;
+    }
+	
+	data.data[0] = '\0';
+	
+	#if UINTPTR_MAX == 0xffffffff
+		sprintf(compileBits,"32Bit");
+	#elif UINTPTR_MAX == 0xffffffffffffffff
+		sprintf(compileBits,"64Bit");
+	#else
+		/* Commodore Vic 20 ???? */
+	#endif
+
+    curl = curl_easy_init();
+	uname(&unameData); 
+	syslog(LOG_NOTICE,"Checking version up to date, my current version = %s",version);
+    if (curl) {
+		memset(nickName,0,sizeof(nickName));
+		for (x = 0;master.ownName[x] != 0;x++){
+			nickName[x] = toupper(master.ownName[x]);
+		}
+		sprintf(url,"81.95.127.156/lindmrmaster.php?name=%s&email=%s&version=%s-%s-%s&id=%i&mmc=%s%s,numRep=%i",nickName,master.eMail,version,unameData.sysname,compileBits,masterDmrId,master.ownCountryCode,master.ownRegion,highestRepeater);
+        curl_easy_setopt(curl,CURLOPT_URL, url );
+        curl_easy_setopt(curl,CURLOPT_TIMEOUT, 10);
+		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl,CURLOPT_WRITEDATA, &data);        
+		res = curl_easy_perform(curl);
+		if (res !=CURLE_OK){
+			syslog(LOG_NOTICE,"Error getting version: %s",curl_easy_strerror(res));
+		}
+		else{
+			syslog(LOG_NOTICE,"The latest available version = %s",data.data);
+			if (atof(data.data) > atof(version)){
+				syslog(LOG_NOTICE,"***** YOU ARE USING AN OLD VERSION. PLEASE UPGRADE TO %s ****",data.data);
+			}
+		}
+			curl_easy_cleanup(curl);
+	}
+}
 
 void playTestVoice(){
 	FILE *file;
@@ -333,8 +414,9 @@ void *scheduler(){
 			time(&dmrCleanUpTime);
 		}
 		
-		if (difftime(timeNow,dmrCleanUpTime) > 580){
+		if (difftime(timeNow,dmrPlusLogin) > 580){
 			loginDmrPlus();
+			versionCheck();
 			time(&dmrPlusLogin);
 		}
 		//playTestVoice();

@@ -54,6 +54,7 @@ int initDatabase();
 
 void openAprsSock();
 void loginDmrPlus();
+void versionCheck();
 
 state dmrState[3];
 
@@ -781,6 +782,7 @@ int main(int argc, char**argv)
 	getLocalReflectors();
 	setRepeatersOffline();
 	loginDmrPlus();
+	versionCheck();
 	//Start sMaster Thread
 	pthread_create(&thread, NULL, sMasterThread,NULL);
 	//Start listening on the service port
