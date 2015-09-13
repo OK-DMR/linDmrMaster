@@ -68,7 +68,7 @@ void sendTalkgroupInfo(int sockfd,struct sockaddr_in servaddr){
 	sprintf(myCCInfo,"%s%s",master.ownCountryCode,master.ownRegion);
 	sprintf(rreqResponse,"TS1R%-20s%-20s:%s\n",myCCInfo,master.ownName,master.announcedCC1);
 	syslog(LOG_NOTICE,"%s",rreqResponse);
-	sendto(sockfd,rreqResponse,strlen(rreqResponse),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+	sendto(sockfd,rreqResponse,107,0,(struct sockaddr *)&servaddr,sizeof(servaddr));
 	
 	for (i=0;i<highestRepeater;i++){
 		if (repeaterList[i].address.sin_addr.s_addr !=0){
@@ -80,7 +80,7 @@ void sendTalkgroupInfo(int sockfd,struct sockaddr_in servaddr){
 				memcpy(announced + (CC2len -4),strRef,6);
 				sprintf(rreqResponse,"TS2R%-20s%-20s:%s\n",myCCInfo,master.ownName,announced);
 				syslog(LOG_NOTICE,"%s",rreqResponse);
-				sendto(sockfd,rreqResponse,strlen(rreqResponse),0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+				sendto(sockfd,rreqResponse,107,0,(struct sockaddr *)&servaddr,sizeof(servaddr));
 				cc2Send = true;
 			}
 		}
