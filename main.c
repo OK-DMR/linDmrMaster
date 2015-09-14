@@ -28,7 +28,7 @@ int maxRepeaters = 20;
 int echoId = 9990;
 int echoSlot = 1;
 int rrsGpsId = 500;
-char version[5] = "3.6";
+char version[5] = "3.7";
 int masterDmrId = 0;
 int debug = false;
 time_t voiceIdleTimer[3];

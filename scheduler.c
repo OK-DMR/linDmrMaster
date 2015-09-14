@@ -142,7 +142,7 @@ void versionCheck(){
 		for (x = 0;master.ownName[x] != 0;x++){
 			nickName[x] = toupper(master.ownName[x]);
 		}
-		sprintf(url,"81.95.127.156/lindmrmaster.php?name=%s&email=%s&version=%s-%s-%s&id=%i&mmc=%s%s,numRep=%i",nickName,master.eMail,version,unameData.sysname,compileBits,masterDmrId,master.ownCountryCode,master.ownRegion,highestRepeater);
+		sprintf(url,"81.95.127.156/lindmrmaster.php?name=%s&email=%s&version=%s-%s-%s&id=%i&mmc=%s%s&numRep=%i",nickName,master.eMail,version,unameData.sysname,compileBits,masterDmrId,master.ownCountryCode,master.ownRegion,highestRepeater);
         curl_easy_setopt(curl,CURLOPT_URL, url );
         curl_easy_setopt(curl,CURLOPT_TIMEOUT, 10);
 		curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION, write_data);

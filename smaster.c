@@ -33,8 +33,8 @@
 #define PTYPE_ACTIVE2 66
 #define PTYPE_END2 67
 #define VFRAMESIZE 103                                        //UDP PAYLOAD SIZE OF sMaster
-#define SYNC_OFFSET1 18                                        //UDP OFFSETS FOR VARIOUS BYTES IN THE DATA STREAM
-#define SYNC_OFFSET2 19                                        //
+//#define SYNC_OFFSET1 18                                        //UDP OFFSETS FOR VARIOUS BYTES IN THE DATA STREAM
+//#define SYNC_OFFSET2 19                                        //
 //#define SYNC_OFFSET3 18                                        //Look for EEEE
 //#define SYNC_OFFSET4 19                                        //Look for EEEE
 #define SLOT_OFFSET1 16                                        //        
@@ -47,6 +47,11 @@
 #define DST_OFFSET2 65
 #define DST_OFFSET3 66
 #define TYP_OFFSET1 62
+
+#define SLOT_TYPE_OFFSET1 18
+#define SLOT_TYPE_OFFSET2 19
+#define FRAME_TYPE_OFFSET1 22
+#define FRAME_TYPE_OFFSET2 23
 
 struct masterData sMaster = {0};
 
@@ -165,7 +170,8 @@ void *sMasterThread(){
 	struct timeval timeout;
 	int packetType = 0;
 	unsigned char slot = 0;
-	int sync = 0;
+	int slotType = 0;
+	int frameType = 0;
 	int srcId = 0;
 	int dstId = 0;
 	int callType = 0;
@@ -209,12 +215,12 @@ void *sMasterThread(){
 	
 	FD_ZERO(&fdMaster);
 	
-	for(;;){
+for(;;){
 		FD_SET(sockfd, &fdMaster);
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 		if (rc = select(sockfd+1, &fdMaster, NULL, NULL, &timeout) == -1) { 
-			syslog(LOG_NOTICE,"[sMaster]Select error in sMaster thread");
+			syslog(LOG_NOTICE,"Select error in sMaster thread");
 			close(sockfd);
 			//need to reconnect here !!!!
         }
@@ -253,15 +259,24 @@ void *sMasterThread(){
 				}
 				else{
 					time(&timeNow);
-					dstId = buffer[DST_OFFSET3] << 16 | buffer[DST_OFFSET2] << 8 | buffer[DST_OFFSET1];
 					if ((dmrState[slot] == IDLE && (difftime(timeNow,voiceIdleTimer[slot]) > master.priorityTimeout || dstId == master.priorityTG[slot])) || sMaster.sending[slot]){
-						packetType = buffer[PTYPE_OFFSET] && 0x0f;
-						sync = buffer[SYNC_OFFSET1] << 8 | buffer[SYNC_OFFSET2];
+						packetType = buffer[PTYPE_OFFSET] & 0x0F;
+						slotType = buffer[SLOT_TYPE_OFFSET1] << 8 | buffer[SLOT_TYPE_OFFSET2];
+						frameType  = buffer[FRAME_TYPE_OFFSET1] << 8 | buffer[FRAME_TYPE_OFFSET2];
+
 						switch (packetType){
 				
 							case 0x01:
-							if (sync == VCALL && dmrState[slot] != VOICE && block[slot] == false){
-								srcId = buffer[SRC_OFFSET3] << 16 | buffer[SRC_OFFSET2] << 8 | buffer[SRC_OFFSET1];
+							if (slotType == DCALL && dmrState[slot] != DATA){
+								callType = buffer[TYP_OFFSET1];
+								syslog(LOG_NOTICE,"[sMaster]Data on slot %i src %i dst %i type %i",slot,srcId,dstId,callType);
+								break;
+							}
+
+							break;
+							
+							case 0x02:
+							if (slotType == 0xeeee && frameType == 0x1111 && dmrState[slot] != VOICE && block[slot] == false){
 								callType = buffer[TYP_OFFSET1];
 								toSend = checkTalkGroup(dstId,slot,callType);
 								if (toSend.repeater == false){
@@ -281,17 +296,10 @@ void *sMasterThread(){
 								}
 								break;
 							}
-							if (sync == DCALL && dmrState[slot] != DATA){
-								srcId = buffer[SRC_OFFSET3] << 16 | buffer[SRC_OFFSET2] << 8 | buffer[SRC_OFFSET1];
-								dstId = buffer[DST_OFFSET3] << 16 | buffer[DST_OFFSET2] << 8 | buffer[DST_OFFSET1];
-								callType = buffer[TYP_OFFSET1];
-								syslog(LOG_NOTICE,"[sMaster]Data on slot %i src %i dst %i type %i",slot,srcId,dstId,callType);
-								break;
-							}
-							break;
+							
 				
 							case 0x03:
-							if (sync == VCALLEND){
+							if (slotType == VCALLEND){
 								dmrState[slot] = IDLE;
 								sMaster.sending[slot] = false;
 								block[slot] = false;
@@ -345,6 +353,7 @@ void *sMasterThread(){
 				sendRepeaterInfo(sockfd,servaddr,100);
 				time(&reportTime);
 			}
+			
 		}
 	}
 }
