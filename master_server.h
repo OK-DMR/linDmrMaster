@@ -42,6 +42,7 @@
 #include <sys/utsname.h>
 #include <stdint.h>
 
+
 struct repeater{
 	struct sockaddr_in address;
 	int origServPort;
@@ -114,6 +115,8 @@ struct masterInfo{
 	int sMasterTS2GroupCount;
 	int repTS1GroupCount;
 	int repTS2GroupCount;
+	int dynTS1GroupCount;
+	int dynTS2GroupCount;
 	int priorityTG[3];
 	int priorityTimeout;
 };
@@ -123,6 +126,8 @@ struct ts{
 	unsigned char repTS2[100];
 	unsigned char sMasterTS1[100];
 	unsigned char sMasterTS2[100];
+	unsigned char dynamicTS1[100];
+	unsigned char dynamicTS2[100];
 };
 
 struct sockInfo{
@@ -143,6 +148,7 @@ struct reflector{
 	unsigned char name[55];
 	int type;
 };
+
 
 typedef enum {VOICE, DATA, IDLE} state;
 
@@ -172,6 +178,8 @@ extern int (*sMasterTS1List)[2];
 extern int (*sMasterTS2List)[2];
 extern int (*repTS1List)[2];
 extern int (*repTS2List)[2];
+extern int (*dynTS1List)[2];
+extern int (*dynTS2List)[2];
 extern int ownCCInt;
 extern int ownRegionInt;
 extern char version[5];
@@ -184,3 +192,5 @@ extern int numReflectors;
 extern int masterDmrId;
 extern int debug;
 extern int versionMismatch;
+extern int dynTg[3];
+extern time_t dynTgTimeout[3];

@@ -152,22 +152,25 @@ unsigned char *  decodeThreeQuarterRate(bool bits[264]){
 	bool *decodedBinary;  //144 bits
 	static unsigned char bb[18] = {0};
 	int x=0,a,i;
+	unsigned char bbb[100];
 
+	
 	infoBits = extractInfo(bits);
 	dibits = extractDibits(infoBits);
 	constellationPoints = constellationOut(dibits);
 	tribits = tribitExtract(constellationPoints);
 	decodedBinary = binaryConvert(tribits);
 
+	memset(bbb,0,100);
 	for (a=0;a<144;a=a+8){
 		bb[x] = 0;
 		for (i=0;i<8;i++){
 			if(decodedBinary[a+i] == true) bb[x] = bb[x] + (char)(128 / pow(2,i));
 		}
-		//printf("(%02X)%c",bb[x],bb[x]);
+		if (debug == 1) sprintf(bbb,"%s(%02X)%c",bbb,bb[x],bb[x]);
 		x++;
 	}
-	//printf("\n");
+	if (debug == 1) syslog(LOG_NOTICE,"[decode34Rate-decodeThreeQuarterRate]%s",bbb);
 	return bb;
 }
 

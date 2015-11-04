@@ -57,11 +57,15 @@ void loginDmrPlus();
 void versionCheck();
 
 state dmrState[3];
+int dynTg[3] = {0};
+time_t dynTgTimeout[3] = {0};
 
 int (*sMasterTS1List)[2];
 int (*sMasterTS2List)[2];
 int (*repTS1List)[2];
 int (*repTS2List)[2];
+int (*dynTS1List)[2];
+int (*dynTS2List)[2];
 
 
 
@@ -546,24 +550,32 @@ int loadTalkGroups(){
 	sMasterTS2List = malloc ((sizeof *sMasterTS2List) * size);
 	repTS1List = malloc ((sizeof *repTS1List) * size);
 	repTS2List = malloc ((sizeof *repTS2List) * size);
+	dynTS1List = malloc ((sizeof *dynTS1List) * size);
+	dynTS2List = malloc ((sizeof *dynTS2List) * size);
 	unsigned char sMasterTS1[100];
 	unsigned char sMasterTS2[100];
 	unsigned char repTS1[100];
 	unsigned char repTS2[100];
+	unsigned char dynamicTS1[100];
+	unsigned char dynamicTS2[100];
 	
 	db = openDatabase();
-	sprintf(SQLQUERY,"SELECT repTS1,repTS2,sMasterTS1,sMasterTS2 FROM master");
+	sprintf(SQLQUERY,"SELECT repTS1,repTS2,sMasterTS1,sMasterTS2,dynamicTS1,dynamicTS2 FROM master");
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){
 		if (sqlite3_step(stmt) == SQLITE_ROW){
 			sprintf(tsInfo.repTS1,"%s",sqlite3_column_text(stmt,0));
 			sprintf(tsInfo.repTS2,"%s",sqlite3_column_text(stmt,1));
 			sprintf(tsInfo.sMasterTS1,"%s",sqlite3_column_text(stmt,2));
 			sprintf(tsInfo.sMasterTS2,"%s",sqlite3_column_text(stmt,3));
+			sprintf(tsInfo.dynamicTS1,"%s",sqlite3_column_text(stmt,4));
+			sprintf(tsInfo.dynamicTS2,"%s",sqlite3_column_text(stmt,5));
 			sqlite3_finalize(stmt);
 			memcpy(sMasterTS1,tsInfo.sMasterTS1,sizeof(sMasterTS1));
 			memcpy(sMasterTS2,tsInfo.sMasterTS2,sizeof(sMasterTS2));
 			memcpy(repTS1,tsInfo.repTS1,sizeof(repTS1));
 			memcpy(repTS2,tsInfo.repTS2,sizeof(repTS2));
+			memcpy(dynamicTS1,tsInfo.dynamicTS1,sizeof(dynamicTS1));
+			memcpy(dynamicTS2,tsInfo.dynamicTS2,sizeof(dynamicTS2));
 			//Assign the talkgroups that we allow on TS1 to and from sMaster
 			if (lineread = strtok(sMasterTS1,",")){
 				if (strstr(lineread,"**")){ //If ** in talkgroup, this is a range of 100
@@ -654,7 +666,7 @@ int loadTalkGroups(){
 					master.repTS1GroupCount++;
 				}
 			}
-
+			//Assign the talkgroups allowed between repeaters on TS2
 			if (lineread = strtok(repTS2,",")){
 				if (strstr(lineread,"**")){//If ** in talkgroup, this is a range of 100
 					repTS2List[0][0] = atoi(lineread) * 100;
@@ -678,6 +690,57 @@ int loadTalkGroups(){
 					master.repTS2GroupCount++;
 				}
 			}
+			
+			//Assign the dynamic talkgroups on TS1
+			if (lineread = strtok(dynamicTS1,",")){
+				if (strstr(lineread,"**")){
+					dynTS1List[0][0] = atoi(lineread) * 100;
+					dynTS1List[0][1] = (atoi(lineread) * 100) + 99;
+				}
+				else{
+					dynTS1List[0][0] = atoi(lineread);
+					dynTS1List[0][1] = atoi(lineread);
+				}
+				master.dynTS1GroupCount++;
+				while (lineread = strtok(NULL,",")){
+					if (master.dynTS1GroupCount > size) dynTS1List = realloc(dynTS1List, (sizeof *dynTS1List) * master.dynTS1GroupCount);
+					if (strstr(lineread,"**")){//If ** in talkgroup, this is a range of 100
+						dynTS1List[master.dynTS1GroupCount][0] = atoi(lineread) * 100;
+						dynTS1List[master.dynTS1GroupCount][1] = (atoi(lineread) * 100) + 99;
+					}
+					else{
+						dynTS1List[master.dynTS1GroupCount][0] = atoi(lineread);
+						dynTS1List[master.dynTS1GroupCount][1] = atoi(lineread);
+					}
+					master.dynTS1GroupCount++;
+				}
+			}
+			
+			//Assign the dynamic talkgroups on TS1
+			if (lineread = strtok(dynamicTS2,",")){
+				if (strstr(lineread,"**")){//If ** in talkgroup, this is a range of 100
+					dynTS2List[0][0] = atoi(lineread) * 100;
+					dynTS2List[0][1] = (atoi(lineread) * 100) + 99;
+				}
+				else{
+					dynTS2List[0][0] = atoi(lineread);
+					dynTS2List[0][1] = atoi(lineread);
+				}
+				master.dynTS2GroupCount++;
+				while (lineread = strtok(NULL,",")){
+					if (master.dynTS2GroupCount > size) dynTS2List = realloc(dynTS2List, (sizeof *dynTS2List) * master.dynTS2GroupCount);
+					if (strstr(lineread,"**")){
+						dynTS2List[master.dynTS2GroupCount][0] = atoi(lineread) * 100;
+						dynTS2List[master.dynTS2GroupCount][1] = (atoi(lineread) * 100) + 99;
+					}
+					else{
+						dynTS2List[master.repTS2GroupCount][0] = atoi(lineread);
+						dynTS2List[master.repTS2GroupCount][1] = atoi(lineread);
+					}
+					master.dynTS2GroupCount++;
+				}
+			}
+
 			//Below code just to show the loaded talkgroups in syslog
 			syslog(LOG_NOTICE,"sMaster talk groups TS1");
 			if (master.sMasterTS1GroupCount>0){
@@ -709,6 +772,21 @@ int loadTalkGroups(){
 			if (master.repTS2GroupCount>0){
 				for (i=0;i<master.repTS2GroupCount;i++){
 					syslog(LOG_NOTICE,"(%i) %i - %i",i,repTS2List[i][0],repTS2List[i][1]);
+				}
+			}
+			else syslog(LOG_NOTICE,"NONE");
+			syslog(LOG_NOTICE,"dynTS1 talk groups");
+			if (master.dynTS1GroupCount>0){
+				for (i=0;i<master.dynTS1GroupCount;i++){
+					syslog(LOG_NOTICE,"(%i) %i - %i",i,dynTS1List[i][0],dynTS1List[i][1]);
+				}
+			}
+			else syslog(LOG_NOTICE,"NONE");
+				
+			syslog(LOG_NOTICE,"dynTS2 talk groups");
+			if (master.dynTS2GroupCount>0){
+				for (i=0;i<master.dynTS2GroupCount;i++){
+					syslog(LOG_NOTICE,"(%i) %i - %i",i,dynTS2List[i][0],dynTS2List[i][1]);
 				}
 			}
 			else syslog(LOG_NOTICE,"NONE");

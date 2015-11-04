@@ -287,6 +287,28 @@ int initDatabase(sqlite3 *db){
                 }
         }
 
+		if (!isFieldExisting(db,"master","dynamicTS1")){
+            sprintf(SQLQUERY,"alter table master add dynamicTS1 varchar(100) default ''");
+            if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                syslog(LOG_NOTICE,"field dynamicTS1 in master created");
+            }
+            else{
+                syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                return 0;
+            }
+        }
+
+		if (!isFieldExisting(db,"master","dynamicTS2")){
+            sprintf(SQLQUERY,"alter table master add dynamicTS2 varchar(100) default ''");
+            if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                syslog(LOG_NOTICE,"field dynamicTS2 in master created");
+            }
+            else{
+                syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                return 0;
+            }
+        }
+
         if (!isFieldExisting(db,"sMaster","priorityTGTS1")){
                 sprintf(SQLQUERY,"alter table sMaster add priorityTGTS1 integer default 0");
                 if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
@@ -332,7 +354,19 @@ int initDatabase(sqlite3 *db){
                 }
         }
 		
-	//Fix for random master ID max 5 digits
+        if (!isFieldExisting(db,"repeaters","codecRepeater")){
+                sprintf(SQLQUERY,"alter table repeaters add codecRepeater integer default 0");
+                if (sqlite3_exec(db,SQLQUERY,0,0,0) == 0){
+                        syslog(LOG_NOTICE,"field codecRepeater in repeaters created");
+                }
+                else{
+                        syslog(LOG_NOTICE,"Database error: %s",sqlite3_errmsg(db));
+                        return 0;
+                }
+        }
+
+
+		//Fix for random master ID max 5 digits
 	bool misMatch = false;
 	sprintf(SQLQUERY,"SELECT masterDmrId FROM master");
 	if (sqlite3_prepare_v2(db,SQLQUERY,-1,&stmt,0) == 0){

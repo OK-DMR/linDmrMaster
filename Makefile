@@ -159,6 +159,7 @@ $(IntermediateDirectory)/users$(DependSuffix): users.c
 
 $(IntermediateDirectory)/users$(PreprocessSuffix): users.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/users$(PreprocessSuffix) "users.c"
+
 	
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -200,7 +201,7 @@ clean:
 	$(RM) $(IntermediateDirectory)/scheduler$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/users$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/users$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/users$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/users$(PreprocessSuffix)	
 
 	$(RM) $(OutputFile)
 

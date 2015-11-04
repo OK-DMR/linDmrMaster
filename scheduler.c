@@ -31,6 +31,7 @@ sqlite3 *openDatabase();
 void closeDatabase();
 void loadUsersToFile();
 void importUsers();
+void importTalkGroups();
 void updateRepeaterTable();
 void sendReflectorStatus();
 int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
@@ -276,6 +277,7 @@ void *scheduler(){
 			time(&importUsersTime);
 			loadUsersToFile();
 			importUsers();
+			importTalkGroups();
 			firstUsersImport = false;
 		}
 
@@ -418,6 +420,19 @@ void *scheduler(){
 			loginDmrPlus();
 			versionCheck();
 			time(&dmrPlusLogin);
+		}
+		
+		if (dynTgTimeout[1] != 0 && difftime(timeNow,dynTgTimeout[1]) > 300){
+			syslog(LOG_NOTICE,"Clearing dynamic talkgroup %i on slot 1 by timeout",dynTg[1]);
+			dynTg[1] = 0;
+			dynTgTimeout[1] = 0;
+			//sendTalkgroupInfo(sMaster.sockfd,sMaster.address);
+		}
+		if (dynTgTimeout[2] != 0 && difftime(timeNow,dynTgTimeout[2]) > 300){
+			syslog(LOG_NOTICE,"Clearing dynamic talkgroup %i on slot 2 by timeout",dynTg[2]);
+			dynTg[2] = 0;
+			dynTgTimeout[2] = 0;
+			//sendTalkgroupInfo(sMaster.sockfd,sMaster.address);
 		}
 		//playTestVoice();
 	}

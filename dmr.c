@@ -61,6 +61,7 @@ struct allow{
 	bool repeater;
 	bool sMaster;
 	bool isRange;
+	bool isDynamic;
 };
 
 struct header{
@@ -90,6 +91,7 @@ void decodeHyteraGpsButton();
 void decodeHyteraRrs();
 sqlite3 *openDatabase();
 void closeDatabase();
+void *g711ClientsListener();
 
 int numbersIndex[20] = {23,11,50,10,72,15,95,10,120,15,139,20,170,12,190,15,218,15,240,15};
 int lettersIndex[52] ={18,13,30,13,45,13,60,13,75,13,79,15,95,13,110,13,125,13,137,13,145,13,155,13,170,13,185,13,195,13,205,13,
@@ -102,12 +104,38 @@ struct allow checkTalkGroup(int dstId, int slot, int callType){
 	int i;
 	
 	toSend.isRange = false;
+	
+		//check dynamic
+	if (slot == 1){
+		for(i=0;i<master.dynTS1GroupCount;i++){
+			if (dstId >= dynTS1List[i][0] && dstId <= dynTS1List[i][1]){
+				toSend.repeater = true;
+				toSend.sMaster = true;
+				toSend.isDynamic = true;
+				if (dynTS1List[i][0] != dynTS1List[i][1]) toSend.isRange = true;
+				return toSend;
+			}
+		}
+	}
+	else{
+		for(i=0;i<master.dynTS2GroupCount;i++){
+			if (dstId >= dynTS2List[i][0] && dstId <= dynTS2List[i][1]){
+				toSend.repeater = true;
+				toSend.sMaster = true;
+				toSend.isDynamic = true;
+				if (dynTS2List[i][0] != dynTS2List[i][1]) toSend.isRange = true;
+				return toSend;
+			}
+		}
+	}
+
 	//First check sMaster talk groups. All sMaster talkgroups apply to the repeaters also
 	if (slot == 1){
 		for(i=0;i<master.sMasterTS1GroupCount;i++){
 			if (dstId >= sMasterTS1List[i][0] && dstId <= sMasterTS1List[i][1]){
 				toSend.repeater = true;
 				toSend.sMaster = true;
+				toSend.isDynamic = false;
 				if (sMasterTS1List[i][0] != sMasterTS1List[i][1]) toSend.isRange = true;
 				return toSend;
 			}
@@ -118,6 +146,7 @@ struct allow checkTalkGroup(int dstId, int slot, int callType){
 			if (dstId >= sMasterTS2List[i][0] && dstId <= sMasterTS2List[i][1]){
 				toSend.repeater = true;
 				toSend.sMaster = true;
+				toSend.isDynamic = false;
 				if (sMasterTS2List[i][0] != sMasterTS2List[i][1]) toSend.isRange = true;
 				return toSend;
 			}
@@ -654,6 +683,7 @@ void updateRepeaterStatus(unsigned char repeater[17],int status){
 }
 
 void *dmrListener(void *f){
+	pthread_t thread;
 	int sockfd,n,i,rc,ii,l;
 	struct sockaddr_in servaddr,cliaddr;
 	socklen_t len;
@@ -821,6 +851,20 @@ void *dmrListener(void *f){
 								status = disconnectReflector(repPos,status);
 							}
 							
+							if (dstId[1] == 4000 && dynTg[1] != 0){
+								syslog(LOG_NOTICE,"[%s]Clearing dynamic talkgroup %i on slot 1 by user",repeaterList[repPos].callsign,dynTg[1]);
+								dynTg[1] = 0;
+								dynTgTimeout[1] = 0;
+								sendTalkgroupInfo(sMaster.sockfd,sMaster.address);
+							}
+
+							if (dstId[2] == 4000 && dynTg[2] != 0){
+								syslog(LOG_NOTICE,"[%s]Clearing dynamic talkgroup %i on slot 2 by user",repeaterList[repPos].callsign,dynTg[2]);
+								dynTg[2] = 0;
+								dynTgTimeout[2] = 0;
+								sendTalkgroupInfo(sMaster.sockfd,sMaster.address);							
+							}
+							
 							if(dstId[2] == 5000 && repeaterList[repPos].pearRepeater[2] == 0){
 								syslog(LOG_NOTICE,"[%s]Requesting info on conference %i %s type %i",repeaterList[repPos].callsign,repeaterList[repPos].conference[2],localReflectors[l].name,localReflectors[l].type);
 								status.reflectorNewState = 4;
@@ -854,6 +898,15 @@ void *dmrListener(void *f){
 									if(autoReconnectTimer !=0 && dstId[2] == 9) time(&autoReconnectTimer);
 								}
 								break;
+							}
+							
+							if (toSend.isDynamic){
+								if (dynTg[slot] == 0 || dynTg[slot] != dstId[slot]){
+									dynTg[slot] = dstId[slot];
+									syslog(LOG_NOTICE,"[%s]Setting dynamic TG %i on TS %i",repeaterList[repPos].callsign,dynTg[slot],slot);
+									//sendTalkgroupInfo(sMaster.sockfd,sMaster.address);
+								}
+								time(&dynTgTimeout[slot]);
 							}
 
 							if(toSend.isRange && dstId[slot] != master.ownCCInt){
@@ -908,7 +961,7 @@ void *dmrListener(void *f){
 							break;
 						}
 
-						if (slotType[slot] == 0x5555 && !receivingData[slot]){ // 1/2 rate data without valid header
+						/*if (slotType[slot] == 0x5555 && !receivingData[slot]){ // 1/2 rate data without valid header
 							block[slot] = true;
 							releaseBlock[slot] = true;
 							break;
@@ -917,7 +970,7 @@ void *dmrListener(void *f){
 							block[slot] = true;
 							releaseBlock[slot] = true;
 							break;
-						}
+						}*/
 						if (slotType[slot] == 0x5555 && receivingData[slot]){ // 1/2 rate data continuation
 							memcpy(dmrPacket,buffer+26,34);  //copy the dmr part out of the Hyetra packet
 							bits = convertToBits(dmrPacket); //convert it to bits
@@ -949,7 +1002,8 @@ void *dmrListener(void *f){
 							decoded34[slot] = decodeThreeQuarterRate(bits);
 							memcpy(decodedString[slot]+(18*dataBlocks[slot]),decoded34[slot],18);
 							dataBlocks[slot]++;
-							if(headerDecode[slot].appendBlocks +1 == dataBlocks[slot]){  //Hytera sends last datablock twice
+							if(headerDecode[slot].appendBlocks == dataBlocks[slot]){
+							//if(headerDecode[slot].appendBlocks +1 == dataBlocks[slot]){  //Hytera sends last datablock twice
 								if (debug == 1) syslog(LOG_NOTICE,"------------------------------------------------------------------------------------------");
 								releaseBlock[slot] = true;
 								receivingData[slot] = false;
@@ -979,6 +1033,7 @@ void *dmrListener(void *f){
 							if (master.priorityTG[slot] == dstId[slot]) time(&voiceIdleTimer[slot]);
 							syslog(LOG_NOTICE,"[%s]Voice call ended on slot %i type %i",repeaterList[repPos].callsign,slot,callType[slot]);
 							logTraffic(srcId[slot],dstId[slot],slot,"Voice",callType[slot],repeaterList[repPos].callsign);
+							if (dynTg[slot] != 0) time(&dynTgTimeout[slot]);
 							if (block[slot] == true){
 								releaseBlock[slot] = true;
 							}
@@ -1168,6 +1223,7 @@ void *dmrListener(void *f){
 				if (dmrState[1] == VOICE){
 					syslog(LOG_NOTICE,"[%s]Voice call ended after timeout on slot 1",repeaterList[repPos].callsign);
 					logTraffic(srcId[1],dstId[1],slot,"Voice",callType[1],repeaterList[repPos].callsign);
+					if (dynTg[1] != 0) time(&dynTgTimeout[1]);
 					localVoice[1] = false;
 					dtmfDetected[1] = false;
 					if (master.priorityTG[1] == dstId[1]) time(&voiceIdleTimer[1]);
@@ -1194,6 +1250,7 @@ void *dmrListener(void *f){
 				if (dmrState[2] == VOICE){
 					syslog(LOG_NOTICE,"[%s]Voice call ended after timeout on slot 2",repeaterList[repPos].callsign);
 					logTraffic(srcId[2],dstId[2],slot,"Voice",callType[2],repeaterList[repPos].callsign);
+					if (dynTg[2] != 0) time(&dynTgTimeout[2]);
 					localVoice[2] = false;
 					dtmfDetected[2] = false;
 					if (master.priorityTG[2] == dstId[2]) time(&voiceIdleTimer[2]);
@@ -1276,7 +1333,7 @@ void *dmrListener(void *f){
 				}
 
 			}
-			if (difftime(timeNow,autoReconnectTimer) > repeaterList[repPos].autoConnectTimer && autoReconnectTimer != 0){
+			if (difftime(timeNow,autoReconnectTimer) > repeaterList[repPos].autoConnectTimer && autoReconnectTimer != 0 && repeaterList[repPos].autoReflector != 0){
 				syslog(LOG_NOTICE,"[%s]Adding repeater to conference %i due to auto reconnect timer",repeaterList[repPos].callsign,repeaterList[repPos].autoReflector);
 				repeaterList[repPos].conference[2] = repeaterList[repPos].autoReflector;
 				reflectorStatus(sockfd,repeaterList[repPos].address,2,repeaterList[repPos].conference[2],repPos);

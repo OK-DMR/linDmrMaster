@@ -85,3 +85,41 @@ void importUsers(){
 	closeDatabase(dbase);
 }
 
+void importTalkGroups(){
+	FILE *fpr;
+	sqlite3 *dbase;
+	char line[500];
+	char SQLQUERY[500];
+	char *id,*name,*running;;
+	int rc;
+
+	char userfilename[20] = "talkgroups.db";
+	fpr = fopen(userfilename,"rb");
+	bzero(line,sizeof(line));
+
+	dbase = openDatabase();
+	syslog(LOG_NOTICE,"Start importing talkgroups to database\n");
+	sprintf(SQLQUERY,"BEGIN");
+	if (sqlite3_exec(dbase,SQLQUERY,0,0,0) != 0){
+		syslog(LOG_NOTICE,"Failed to start transaction: %s\n",sqlite3_errmsg(dbase));
+		return;
+	}
+	while (!feof(fpr)){
+		fgets(line,500,fpr);
+		running = strdup(line);
+		id = strsep(&running,";");
+		name = strsep(&running,";");
+		sprintf(SQLQUERY,"INSERT INTO callsigns (radioId,callsign,name) VALUES (%s,'%s','%s')",id,name,name);
+			if (sqlite3_exec(dbase,SQLQUERY,0,0,0) != 0){
+			syslog(LOG_NOTICE,"Failed to add talkgroup in table callsigns: %s\n",sqlite3_errmsg(dbase));
+		}
+	}
+	sprintf(SQLQUERY,"COMMIT");
+	if (sqlite3_exec(dbase,SQLQUERY,0,0,0) != 0){
+		syslog(LOG_NOTICE,"Failed to commit: %s\n",sqlite3_errmsg(dbase));
+	}
+	syslog(LOG_NOTICE,"End importing talkgroups to database\n");
+	fclose(fpr);
+	closeDatabase(dbase);
+
+}
