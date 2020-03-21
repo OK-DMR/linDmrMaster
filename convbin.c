@@ -20,27 +20,27 @@
 
 #include "master_server.h"
 
-bool * convertToBits(unsigned char packet[34]){
-	static bool bits[264];
-	unsigned char convPacket[33];
-	unsigned char dmrPacket[100];
-	int i,x;
-	
-	memset(dmrPacket,0,100);
-	//bit invert
-	for (i=0;i<32;i=i+2){
-		convPacket[i] = *(packet + i + 1);
-		convPacket[i+1] = *(packet +i);
-		if (debug ==1) sprintf(dmrPacket,"%s%02x:%02x:",dmrPacket,convPacket[i],convPacket[i+1]);
-	}
-	convPacket[32] = *(packet + 33);
-	if (debug ==1) syslog(LOG_NOTICE,"[convertToBits]DMR packet:%s",dmrPacket);
-	//convert to bits
-	for (i=0;i<33;i++){
-		for(x=0;x<8;x++){
-			bits[(7-x) + (8 * i)] = (convPacket[i] >> x) & 1;
-		}
-	}
-	
-	return bits;
+bool *convertToBits(unsigned char packet[34]) {
+    static bool bits[264];
+    unsigned char convPacket[33];
+    unsigned char dmrPacket[100];
+    int i, x;
+
+    memset(dmrPacket, 0, 100);
+    //bit invert
+    for (i = 0; i < 32; i = i + 2) {
+        convPacket[i] = *(packet + i + 1);
+        convPacket[i + 1] = *(packet + i);
+        if (debug == 1) sprintf(dmrPacket, "%s%02x:%02x:", dmrPacket, convPacket[i], convPacket[i + 1]);
+    }
+    convPacket[32] = *(packet + 33);
+    if (debug == 1) syslog(LOG_NOTICE, "[convertToBits]DMR packet:%s", dmrPacket);
+    //convert to bits
+    for (i = 0; i < 33; i++) {
+        for (x = 0; x < 8; x++) {
+            bits[(7 - x) + (8 * i)] = (convPacket[i] >> x) & 1;
+        }
+    }
+
+    return bits;
 }

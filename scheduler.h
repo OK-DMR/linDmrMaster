@@ -16,20 +16,26 @@
 #define FRAME_TYPE_OFFSET2 23
 #define PTYPE_OFFSET 8
 
-int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
+int repeater, oldStartPos = 0, startPos = 0, oldFrames = 0, frames = 0;
 char startFile[100];
 
 struct url_data {
     size_t size;
-    char* data;
+    char *data;
 };
 
 void sendAprsBeacon();
+
 sqlite3 *openDatabase();
+
 void closeDatabase();
+
 void loadUsersToFile();
+
 void importUsers();
+
 void importTalkGroups();
+
 void sendReflectorStatus();
 
 #endif //LINDMR_SCHEDULER_H

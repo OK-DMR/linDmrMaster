@@ -47,43 +47,58 @@
 #define DTMF_NUM_OFFSET2 29
 
 
-struct allow{
+struct allow {
     bool repeater;
     bool sMaster;
     bool isRange;
     bool isDynamic;
 };
 
-struct header{
+struct header {
     bool responseRequested;
     int dataPacketFormat;
     int sapId;
     int appendBlocks;
 };
 
-struct state{
+struct state {
     int reflectorNewState;
     int repConnectNewState;
 };
 
 
 void delRepeaterByPos();
+
 void sendTalkgroupInfo();
+
 void sendRepeaterInfo();
+
 void sendReflectorStatus();
-bool * convertToBits();
+
+bool *convertToBits();
+
 struct header decodeDataHeader();
-unsigned char *  decodeThreeQuarterRate();
-unsigned char *  decodeHalfRate();
+
+unsigned char *decodeThreeQuarterRate();
+
+unsigned char *decodeHalfRate();
+
 void decodeHyteraGpsTriggered();
+
 void decodeHyteraGpsCompressed();
+
 void decodeHyteraGpsButton();
+
 void decodeHyteraRrs();
+
 sqlite3 *openDatabase();
+
 void closeDatabase();
+
 void *g711ClientsListener();
+
 void decodeHyteraOffRrs(struct repeater repeater, unsigned char data[300]);
 
-time_t reflectorTimeout,autoReconnectTimer;
+time_t reflectorTimeout, autoReconnectTimer;
 
 #endif //LINDMR_DMR_H

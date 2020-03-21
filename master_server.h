@@ -47,114 +47,116 @@
 #include <stdint.h>
 
 
-struct repeater{
-	struct sockaddr_in address;
-	int origServPort;
-	int sockfd;
-	bool dmrOnline;
-	bool rdacOnline;
-	bool rdacUpdated;
-	bool intlRefAllow;
-	int rdacUpdateAttempts;
-	bool sending[3];
-	int conference[3];
-	int conferenceType[3];
-	int pearRepeater[3];
-	int pearPos[3];
-	int id;
-	time_t pearTimeout;
-	time_t lastPTPPConnect;
-	time_t lastDMRConnect;
-	time_t lastRDACConnect;
-	unsigned char callsign[17];
-	unsigned char txFreq[10];
-	unsigned char shift[7];
-	unsigned char hardware[11];
-	unsigned char firmware[14];
-	unsigned char mode[4];
-	unsigned char language[50];
-	unsigned char geoLocation[20];
-	unsigned char aprsPass[6];
-	unsigned char aprsBeacon[100];
-	unsigned char aprsPHG[7];
-	int autoReflector;
-	int reflectorTimeout;
-	int autoConnectTimer;
-	int upDated;
+struct repeater {
+    struct sockaddr_in address;
+    int origServPort;
+    int sockfd;
+    bool dmrOnline;
+    bool rdacOnline;
+    bool rdacUpdated;
+    bool intlRefAllow;
+    int rdacUpdateAttempts;
+    bool sending[3];
+    int conference[3];
+    int conferenceType[3];
+    int pearRepeater[3];
+    int pearPos[3];
+    int id;
+    time_t pearTimeout;
+    time_t lastPTPPConnect;
+    time_t lastDMRConnect;
+    time_t lastRDACConnect;
+    unsigned char callsign[17];
+    unsigned char txFreq[10];
+    unsigned char shift[7];
+    unsigned char hardware[11];
+    unsigned char firmware[14];
+    unsigned char mode[4];
+    unsigned char language[50];
+    unsigned char geoLocation[20];
+    unsigned char aprsPass[6];
+    unsigned char aprsBeacon[100];
+    unsigned char aprsPHG[7];
+    int autoReflector;
+    int reflectorTimeout;
+    int autoConnectTimer;
+    int upDated;
 };
 
 
-struct idInfo{
-        int radioId;
-        char callsign[32];
-        char name[32];
-        long aprsTimeStamp;
-        char aprsSuffix[4];
-        char aprsBeacon[100];
-        int aprsSymbol;
-        int messageStore;
+struct idInfo {
+    int radioId;
+    char callsign[32];
+    char name[32];
+    long aprsTimeStamp;
+    char aprsSuffix[4];
+    char aprsBeacon[100];
+    int aprsSymbol;
+    int messageStore;
 };
 
-struct masterData{
-	struct sockaddr_in address;
-	struct sockaddr_in voiceAddress;
-	int sockfd;
-	int voiceSockfd;
-	bool online;
-	bool sending[3];
+struct masterData {
+    struct sockaddr_in address;
+    struct sockaddr_in voiceAddress;
+    int sockfd;
+    int voiceSockfd;
+    bool online;
+    bool sending[3];
 };
 
-struct masterInfo{
-	char ownName[20];
-	char ownCountryCode[5];
-	char ownRegion[2];
-	char eMail[100];
-	char sMasterIp[100];
-	char sMasterPort[6];
-	char announcedCC1[90];
-	char announcedCC2[90];
-	int ownCCInt;
-	int ownRegionInt;
-	int sMasterTS1GroupCount;
-	int sMasterTS2GroupCount;
-	int repTS1GroupCount;
-	int repTS2GroupCount;
-	int dynTS1GroupCount;
-	int dynTS2GroupCount;
-	int priorityTG[3];
-	int priorityTimeout;
+struct masterInfo {
+    char ownName[20];
+    char ownCountryCode[5];
+    char ownRegion[2];
+    char eMail[100];
+    char sMasterIp[100];
+    char sMasterPort[6];
+    char announcedCC1[90];
+    char announcedCC2[90];
+    int ownCCInt;
+    int ownRegionInt;
+    int sMasterTS1GroupCount;
+    int sMasterTS2GroupCount;
+    int repTS1GroupCount;
+    int repTS2GroupCount;
+    int dynTS1GroupCount;
+    int dynTS2GroupCount;
+    int priorityTG[3];
+    int priorityTimeout;
 };
 
-struct ts{
-	unsigned char repTS1[100];
-	unsigned char repTS2[100];
-	unsigned char sMasterTS1[100];
-	unsigned char sMasterTS2[100];
-	unsigned char dynamicTS1[100];
-	unsigned char dynamicTS2[100];
+struct ts {
+    unsigned char repTS1[100];
+    unsigned char repTS2[100];
+    unsigned char sMasterTS1[100];
+    unsigned char sMasterTS2[100];
+    unsigned char dynamicTS1[100];
+    unsigned char dynamicTS2[100];
 };
 
-struct sockInfo{
-	struct sockaddr_in address;
-	int port;
+struct sockInfo {
+    struct sockaddr_in address;
+    int port;
 };
 
-struct gpsCoordinates{
-	int radioId;
-	unsigned char latitude[9];
-	unsigned char longitude[10];
-	unsigned char speed[4];
-	unsigned char heading[4];
+struct gpsCoordinates {
+    int radioId;
+    unsigned char latitude[9];
+    unsigned char longitude[10];
+    unsigned char speed[4];
+    unsigned char heading[4];
 };
 
-struct reflector{
-	int id;
-	unsigned char name[55];
-	int type;
+struct reflector {
+    int id;
+    unsigned char name[55];
+    int type;
 };
 
 
-typedef enum {VOICE, DATA, IDLE} state;
+typedef enum {
+    VOICE, DATA, IDLE
+} state;
 
 extern struct repeater repeaterList[100];
 extern struct masterData sMaster;
