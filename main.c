@@ -843,8 +843,8 @@ int main(int argc, char **argv) {
         exit(127);
     }
 
-    setlogmask(LOG_UPTO (LOG_NOTICE));
-    openlog("Master-server", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+    //setlogmask(LOG_UPTO (LOG_NOTICE));
+    //openlog("Master-server", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
     pthread_t thread;
     int port;

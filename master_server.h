@@ -25,7 +25,6 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <syslog.h>
 #include <pthread.h>
 #include <strings.h>
 #include <string.h>
@@ -46,6 +45,7 @@
 #include <sys/utsname.h>
 #include <stdint.h>
 
+#define syslog(priority, ...) { printf("\n"); printf(__VA_ARGS__); }
 
 struct repeater {
     struct sockaddr_in address;
