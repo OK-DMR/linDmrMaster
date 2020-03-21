@@ -17,9 +17,7 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include "master_server.h"
-
-sqlite3 *openDatabase();
-void closeDatabase();
+#include "users.h"
 
 void loadUsersToFile(){
     CURL *curl;

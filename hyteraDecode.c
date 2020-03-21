@@ -18,11 +18,7 @@
 */
 
 #include "master_server.h"
-void sendAprs();
-int checkCoordinates();
-sqlite3 *openDatabase();
-void closeDatabase();
-
+#include "hyteraDecode.h"
 
 void decodeHyteraGpsTriggered(int radioId,int destId,struct repeater repeater, unsigned char data[300]){
 

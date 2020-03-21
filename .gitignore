@@ -1,0 +1,5 @@
+/.idea
+/Master_Server.sql
+*.cbp
+/build
+/Release

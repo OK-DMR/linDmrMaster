@@ -17,6 +17,10 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+
+#ifndef LINDMR_MASTER_H
+#define LINDMR_MASTER_H
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -194,3 +198,5 @@ extern int debug;
 extern int versionMismatch;
 extern int dynTg[3];
 extern time_t dynTgTimeout[3];
+
+#endif // LINDMR_MASTER_H

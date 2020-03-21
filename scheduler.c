@@ -18,29 +18,7 @@
 */
 
 #include "master_server.h"
-
-#define VFRAMESIZE 72
-#define SLOT_TYPE_OFFSET1 18
-#define SLOT_TYPE_OFFSET2 19
-#define FRAME_TYPE_OFFSET1 22
-#define FRAME_TYPE_OFFSET2 23
-#define PTYPE_OFFSET 8
-
-void sendAprsBeacon();
-sqlite3 *openDatabase();
-void closeDatabase();
-void loadUsersToFile();
-void importUsers();
-void importTalkGroups();
-void updateRepeaterTable();
-void sendReflectorStatus();
-int repeater,oldStartPos = 0,startPos=0,oldFrames = 0,frames=0;
-char startFile[100];
-
-struct url_data {
-    size_t size;
-    char* data;
-};
+#include "scheduler.h"
 
 
 void loginDmrPlus(){
@@ -352,7 +330,7 @@ void *scheduler(){
 											if(sMaster.online){
 												sendRepeaterInfo(sMaster.sockfd,sMaster.address,i);
 												sendReflectorStatus(sMaster.sockfd,sMaster.address,i);
-												sendTalkgroupInfo(sMaster.sockfd,sMaster.address,repeaterList[i].conference[2]);
+												sendTalkgroupInfo(sMaster.sockfd,sMaster.address); //,repeaterList[i].conference[2]);
 											}
 										}
 									}
