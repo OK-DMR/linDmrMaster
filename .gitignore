@@ -3,3 +3,4 @@
 *.cbp
 /build
 /Release
+/notes.txt

@@ -309,6 +309,8 @@ void serviceListener(int port) {
     bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
     FD_ZERO(&fdService);
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
     for (;;) {
         FD_SET(sockfd, &fdService);
         timeout.tv_sec = 2;
@@ -451,6 +453,7 @@ void serviceListener(int port) {
             }
         }
     }
+#pragma clang diagnostic pop
 }
 
 int getMasterInfo() {
@@ -834,7 +837,7 @@ void setRepeatersOffline() {
 
 
 int main(int argc, char **argv) {
-
+    
     int pid;
     pid = fork();
     if (pid == 0) {
