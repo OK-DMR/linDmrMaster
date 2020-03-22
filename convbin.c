@@ -20,7 +20,7 @@
 
 #include "master_server.h"
 
-bool *convertToBits(unsigned char packet[34]) {
+bool *convertToBits(const unsigned char packet[34]) {
     static bool bits[264];
     unsigned char convPacket[33];
     unsigned char dmrPacket[100];
